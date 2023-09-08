@@ -1201,10 +1201,9 @@ json_t* Engine::toJson() {
 
 
 void Engine::fromJson(json_t* rootJ) {
-	// Don't write-lock the entire method because most of it doesn't need it.
+	std::lock_guard<SharedMutex> lock(internal->mutex);
 
-	// Write-locks
-	clear();
+	clear_NoLock();
 	// modules
 	json_t* modulesJ = json_object_get(rootJ, "modules");
 	if (!modulesJ)
@@ -1237,8 +1236,7 @@ void Engine::fromJson(json_t* rootJ) {
 				module->id = moduleIndex;
 			}
 
-			// Write-locks
-			addModule(module);
+			addModule_NoLock(module);
 		}
 		catch (Exception& e) {
 			WARN("Cannot load module: %s", e.what());
@@ -1269,8 +1267,7 @@ void Engine::fromJson(json_t* rootJ) {
 				cable->id = cableIndex;
 			}
 
-			// Write-locks
-			addCable(cable);
+			addCable_NoLock(cable);
 		}
 		catch (Exception& e) {
 			WARN("Cannot load cable: %s", e.what());
@@ -1284,7 +1281,7 @@ void Engine::fromJson(json_t* rootJ) {
 	json_t* masterModuleIdJ = json_object_get(rootJ, "masterModuleId");
 	if (masterModuleIdJ) {
 		Module* masterModule = getModule(json_integer_value(masterModuleIdJ));
-		setMasterModule(masterModule);
+		setMasterModule_NoLock(masterModule);
 	}
 }
 
