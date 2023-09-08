@@ -409,9 +409,6 @@ static void Engine_stepFrame(Engine* that) {
 
 static void Port_setDisconnected(Port* that) {
 	that->channels = 0;
-	for (int c = 0; c < PORT_MAX_CHANNELS; c++) {
-		that->voltages[c] = 0.f;
-	}
 }
 
 
@@ -419,38 +416,6 @@ static void Port_setConnected(Port* that) {
 	if (that->channels > 0)
 		return;
 	that->channels = 1;
-}
-
-
-static void Engine_updateConnected(Engine* that) {
-	// Find disconnected ports
-	std::set<Port*> disconnectedPorts;
-	for (Module* module : that->internal->modules) {
-		for (Input& input : module->inputs) {
-			disconnectedPorts.insert(&input);
-		}
-		for (Output& output : module->outputs) {
-			disconnectedPorts.insert(&output);
-		}
-	}
-	for (Cable* cable : that->internal->cables) {
-		// Connect input
-		Input& input = cable->inputModule->inputs[cable->inputId];
-		auto inputIt = disconnectedPorts.find(&input);
-		if (inputIt != disconnectedPorts.end())
-			disconnectedPorts.erase(inputIt);
-		Port_setConnected(&input);
-		// Connect output
-		Output& output = cable->outputModule->outputs[cable->outputId];
-		auto outputIt = disconnectedPorts.find(&output);
-		if (outputIt != disconnectedPorts.end())
-			disconnectedPorts.erase(outputIt);
-		Port_setConnected(&output);
-	}
-	// Disconnect ports that have no cable
-	for (Port* port : disconnectedPorts) {
-		Port_setDisconnected(port);
-	}
 }
 
 
@@ -963,8 +928,7 @@ void Engine::addCable(Cable* cable) {
 		assert(cable2 != cable);
 		// Check that the input is not already used by another cable
 		assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId));
-		// Get connected status of output, to decide whether we need to call a PortChangeEvent.
-		// It's best to not trust `cable->outputModule->outputs[cable->outputId]->isConnected()`
+		// Check if output is already connected to a cable
 		if (cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId)
 			outputWasConnected = true;
 	}
@@ -976,7 +940,12 @@ void Engine::addCable(Cable* cable) {
 	// Add the cable
 	internal->cables.push_back(cable);
 	internal->cablesCache[cable->id] = cable;
-	Engine_updateConnected(this);
+	// Set input as connected
+	Input& input = cable->inputModule->inputs[cable->inputId];
+	Port_setConnected(&input);
+	// Set output as connected, which might already be connected
+	Output& output = cable->outputModule->outputs[cable->outputId];
+	Port_setConnected(&output);
 	// Dispatch input port event
 	{
 		Module::PortChangeEvent e;
@@ -1010,13 +979,21 @@ void Engine::removeCable_NoLock(Cable* cable) {
 	// Remove the cable
 	internal->cablesCache.erase(cable->id);
 	internal->cables.erase(it);
-	Engine_updateConnected(this);
+	// Set input as disconnected
+	Input& input = cable->inputModule->inputs[cable->inputId];
+	Port_setDisconnected(&input);
+	// Check if output is still connected to a cable
 	bool outputIsConnected = false;
 	for (Cable* cable2 : internal->cables) {
-		// Get connected status of output, to decide whether we need to call a PortChangeEvent.
-		// It's best to not trust `cable->outputModule->outputs[cable->outputId]->isConnected()`
-		if (cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId)
+		if (cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId) {
 			outputIsConnected = true;
+			break;
+		}
+	}
+	// Set output as disconnected if disconnected from all cables
+	if (!outputIsConnected) {
+		Output& output = cable->outputModule->outputs[cable->outputId];
+		Port_setDisconnected(&output);
 	}
 	// Dispatch input port event
 	{
