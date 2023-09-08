@@ -710,6 +710,11 @@ std::vector<int64_t> Engine::getModuleIds() {
 
 void Engine::addModule(Module* module) {
 	std::lock_guard<SharedMutex> lock(internal->mutex);
+	addModule_NoLock(module);
+}
+
+
+void Engine::addModule_NoLock(Module* module) {
 	assert(module);
 	// Check that the module is not already added
 	auto it = std::find(internal->modules.begin(), internal->modules.end(), module);
@@ -918,6 +923,11 @@ std::vector<int64_t> Engine::getCableIds() {
 
 void Engine::addCable(Cable* cable) {
 	std::lock_guard<SharedMutex> lock(internal->mutex);
+	addCable_NoLock(cable);
+}
+
+
+void Engine::addCable_NoLock(Cable* cable) {
 	assert(cable);
 	// Check cable properties
 	assert(cable->inputModule);
