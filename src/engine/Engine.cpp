@@ -380,6 +380,12 @@ static void Engine_stepFrame(Engine* that) {
 		}
 	}
 
+	// Step modules along with workers
+	internal->workerModuleIndex = 0;
+	internal->engineBarrier.wait();
+	Engine_stepWorker(that, 0);
+	internal->workerBarrier.wait();
+
 	// Step cables
 	for (Cable* cable : that->internal->cables) {
 		Cable_step(cable);
@@ -396,12 +402,6 @@ static void Engine_stepFrame(Engine* that) {
 			module->rightExpander.messageFlipRequested = false;
 		}
 	}
-
-	// Step modules along with workers
-	internal->workerModuleIndex = 0;
-	internal->engineBarrier.wait();
-	Engine_stepWorker(that, 0);
-	internal->workerBarrier.wait();
 
 	internal->frame++;
 }
