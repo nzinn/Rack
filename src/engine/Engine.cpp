@@ -1201,10 +1201,8 @@ json_t* Engine::toJson() {
 
 
 void Engine::fromJson(json_t* rootJ) {
-	std::lock_guard<SharedMutex> lock(internal->mutex);
-
-	clear_NoLock();
 	// modules
+	std::vector<Module*> modules;
 	json_t* modulesJ = json_object_get(rootJ, "modules");
 	if (!modulesJ)
 		return;
@@ -1228,15 +1226,12 @@ void Engine::fromJson(json_t* rootJ) {
 		assert(module);
 
 		try {
-			// This doesn't need a lock because the Module is not added to the Engine yet.
 			module->fromJson(moduleJ);
 
 			// Before 1.0, the module ID was the index in the "modules" array
 			if (module->id < 0) {
 				module->id = moduleIndex;
 			}
-
-			addModule_NoLock(module);
 		}
 		catch (Exception& e) {
 			WARN("Cannot load module: %s", e.what());
@@ -1244,6 +1239,17 @@ void Engine::fromJson(json_t* rootJ) {
 			delete module;
 			continue;
 		}
+
+		modules.push_back(module);
+	}
+
+	std::lock_guard<SharedMutex> lock(internal->mutex);
+
+	clear_NoLock();
+
+	// Add modules
+	for (Module* module : modules) {
+		addModule_NoLock(module);
 	}
 
 	// cables
@@ -1280,7 +1286,7 @@ void Engine::fromJson(json_t* rootJ) {
 	// masterModule
 	json_t* masterModuleIdJ = json_object_get(rootJ, "masterModuleId");
 	if (masterModuleIdJ) {
-		Module* masterModule = getModule(json_integer_value(masterModuleIdJ));
+		Module* masterModule = getModule_NoLock(json_integer_value(masterModuleIdJ));
 		setMasterModule_NoLock(masterModule);
 	}
 }
