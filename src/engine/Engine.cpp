@@ -407,18 +407,6 @@ static void Engine_stepFrame(Engine* that) {
 }
 
 
-static void Port_setDisconnected(Port* that) {
-	that->channels = 0;
-}
-
-
-static void Port_setConnected(Port* that) {
-	if (that->channels > 0)
-		return;
-	that->channels = 1;
-}
-
-
 static void Engine_refreshParamHandleCache(Engine* that) {
 	// Clear cache
 	that->internal->paramHandlesCache.clear();
@@ -952,10 +940,12 @@ void Engine::addCable_NoLock(Cable* cable) {
 	internal->cablesCache[cable->id] = cable;
 	// Set input as connected
 	Input& input = cable->inputModule->inputs[cable->inputId];
-	Port_setConnected(&input);
+	input.channels = 1;
 	// Set output as connected, which might already be connected
 	Output& output = cable->outputModule->outputs[cable->outputId];
-	Port_setConnected(&output);
+	if (output.channels == 0) {
+		output.channels = 1;
+	}
 	// Dispatch input port event
 	{
 		Module::PortChangeEvent e;
@@ -991,7 +981,11 @@ void Engine::removeCable_NoLock(Cable* cable) {
 	internal->cables.erase(it);
 	// Set input as disconnected
 	Input& input = cable->inputModule->inputs[cable->inputId];
-	Port_setDisconnected(&input);
+	input.channels = 0;
+	// Clear input values
+	for (uint8_t c = 0; c < PORT_MAX_CHANNELS; c++) {
+		input.setVoltage(0.f, c);
+	}
 	// Check if output is still connected to a cable
 	bool outputIsConnected = false;
 	for (Cable* cable2 : internal->cables) {
@@ -1003,7 +997,8 @@ void Engine::removeCable_NoLock(Cable* cable) {
 	// Set output as disconnected if disconnected from all cables
 	if (!outputIsConnected) {
 		Output& output = cable->outputModule->outputs[cable->outputId];
-		Port_setDisconnected(&output);
+		output.channels = 0;
+		// Don't clear output values
 	}
 	// Dispatch input port event
 	{
