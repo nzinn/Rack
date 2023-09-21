@@ -1211,7 +1211,6 @@ void Engine::fromJson(json_t* rootJ) {
 		}
 		catch (Exception& e) {
 			WARN("Cannot load model: %s", e.what());
-			APP->patch->log(e.what());
 			continue;
 		}
 
@@ -1230,7 +1229,6 @@ void Engine::fromJson(json_t* rootJ) {
 		}
 		catch (Exception& e) {
 			WARN("Cannot load module: %s", e.what());
-			APP->patch->log(e.what());
 			delete module;
 			continue;
 		}

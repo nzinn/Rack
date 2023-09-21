@@ -13,6 +13,7 @@
 #include <app/RackWidget.hpp>
 #include <history.hpp>
 #include <settings.hpp>
+#include <plugin.hpp>
 
 
 namespace rack {
@@ -22,7 +23,14 @@ namespace patch {
 static const char PATCH_FILTERS[] = "VCV Rack patch (.vcv):vcv";
 
 
+struct Manager::Internal {
+	bool disableAutosaveOnClose = false;
+};
+
+
 Manager::Manager() {
+	internal = new Internal;
+
 	autosavePath = asset::user("autosave");
 
 	// Use a different temporary autosave dir when safe mode is enabled, to avoid altering normal autosave.
@@ -43,13 +51,17 @@ Manager::~Manager() {
 		return;
 	}
 
-	// Dispatch onSave to all Modules so they save their patch storage, etc.
-	APP->engine->prepareSave();
-	// Save autosave if not headless
-	if (!settings::headless) {
-		APP->patch->saveAutosave();
+	if (!internal->disableAutosaveOnClose) {
+		// Dispatch onSave to all Modules so they save their patch storage, etc.
+		APP->engine->prepareSave();
+		// Save autosave if not headless
+		if (!settings::headless) {
+			APP->patch->saveAutosave();
+		}
+		cleanAutosave();
 	}
-	cleanAutosave();
+
+	delete internal;
 }
 
 
@@ -348,6 +360,9 @@ void Manager::loadAutosave() {
 		throw Exception("Failed to load patch. JSON parsing error at %s %d:%d %s", error.source, error.line, error.column, error.text);
 	DEFER({json_decref(rootJ);});
 
+	if (checkUnavailableModulesJson(rootJ))
+		return;
+
 	fromJson(rootJ);
 }
 
@@ -475,7 +490,6 @@ json_t* Manager::toJson() {
 
 void Manager::fromJson(json_t* rootJ) {
 	clear();
-	warningLog = "";
 
 	// version
 	std::string version;
@@ -521,23 +535,58 @@ void Manager::fromJson(json_t* rootJ) {
 		}
 	}
 	catch (Exception& e) {
-		warningLog += "\n";
-		warningLog += e.what();
+		WARN("Cannot load patch: %s", e.what());
 	}
 	// At this point, ModuleWidgets and CableWidgets should own all Modules and Cables.
 	// TODO Assert this
-
-	// Display a message if we have something to say.
-	if (warningLog != "") {
-		osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK, warningLog.c_str());
-	}
-	warningLog = "";
 }
 
 
-void Manager::log(std::string msg) {
-	warningLog += msg;
-	warningLog += "\n";
+bool Manager::checkUnavailableModulesJson(json_t* rootJ) {
+	std::set<std::string> pluginModuleSlugs;
+
+	json_t* modulesJ = json_object_get(rootJ, "modules");
+	if (!modulesJ)
+		return false;
+	size_t moduleIndex;
+	json_t* moduleJ;
+	json_array_foreach(modulesJ, moduleIndex, moduleJ) {
+		// Get model
+		try {
+			plugin::modelFromJson(moduleJ);
+		}
+		catch (Exception& e) {
+			// Get plugin and module slugs
+			json_t* pluginSlugJ = json_object_get(moduleJ, "plugin");
+			if (!pluginSlugJ)
+				continue;
+			std::string pluginSlug = json_string_value(pluginSlugJ);
+
+			json_t* modelSlugJ = json_object_get(moduleJ, "model");
+			if (!modelSlugJ)
+				continue;
+			std::string modelSlug = json_string_value(modelSlugJ);
+
+			// Add to list
+			pluginModuleSlugs.insert(pluginSlug + "/" + modelSlug);
+		}
+	}
+
+	if (!pluginModuleSlugs.empty()) {
+		std::string msg = "This patch includes modules that are not installed. Close Rack and show missing modules on the VCV Library?";
+		if (osdialog_message(OSDIALOG_WARNING, OSDIALOG_YES_NO, msg.c_str())) {
+			std::string url = "https://library.vcvrack.com/?modules=";
+			url += string::join(pluginModuleSlugs, ",");
+			system::openBrowser(url);
+			// Close Rack
+			APP->window->close();
+			// Don't save autosave when closing
+			// Possible bug: The autosave internal could still occur before the window closes
+			internal->disableAutosaveOnClose = true;
+			return true;
+		}
+	}
+	return false;
 }
 
 
