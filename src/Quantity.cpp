@@ -2,6 +2,7 @@
 
 #include <Quantity.hpp>
 #include <string.hpp>
+#include <dsp/common.hpp>
 
 
 namespace rack {
@@ -78,6 +79,20 @@ static void teVarsInit() {
 
 	// Add custom functions
 	teVars.push_back({"log2", (void*) (double(*)(double)) std::log2, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+
+	teVars.push_back({"gaintodb", (void*) (double(*)(double)) [](double x) -> double {
+		return std::log10(x) * 20;
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+	teVars.push_back({"dbtogain", (void*) (double(*)(double)) [](double x) -> double {
+		return std::pow(10, x / 20);
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+
+	teVars.push_back({"vtof", (void*) (double(*)(double)) [](double x) -> double {
+		return std::pow(2, x) * dsp::FREQ_C4;
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+	teVars.push_back({"ftov", (void*) (double(*)(double)) [](double x) -> double {
+		return std::log2(x / dsp::FREQ_C4);
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
 }
 
 void Quantity::setDisplayValueString(std::string s) {
