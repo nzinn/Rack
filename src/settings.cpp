@@ -61,6 +61,7 @@ std::vector<NVGcolor> cableColors = {
 	color::fromHexString("#8b4ade"), // purple
 };
 bool autoCheckUpdates = true;
+bool verifyHttpsCerts = true;
 bool showTipsOnLaunch = true;
 int tipIndex = -1;
 BrowserSort browserSort = BROWSER_SORT_UPDATED;
@@ -186,6 +187,8 @@ json_t* toJson() {
 	json_object_set_new(rootJ, "cableColors", cableColorsJ);
 
 	json_object_set_new(rootJ, "autoCheckUpdates", json_boolean(autoCheckUpdates));
+
+	json_object_set_new(rootJ, "verifyHttpsCerts", json_boolean(verifyHttpsCerts));
 
 	json_object_set_new(rootJ, "showTipsOnLaunch", json_boolean(showTipsOnLaunch));
 
@@ -410,6 +413,10 @@ void fromJson(json_t* rootJ) {
 	json_t* autoCheckUpdatesJ = json_object_get(rootJ, "autoCheckUpdates");
 	if (autoCheckUpdatesJ)
 		autoCheckUpdates = json_boolean_value(autoCheckUpdatesJ);
+
+	json_t* verifyHttpsCertsJ = json_object_get(rootJ, "verifyHttpsCerts");
+	if (verifyHttpsCertsJ)
+		verifyHttpsCerts = json_boolean_value(verifyHttpsCertsJ);
 
 	json_t* showTipsOnLaunchJ = json_object_get(rootJ, "showTipsOnLaunch");
 	if (showTipsOnLaunchJ)

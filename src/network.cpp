@@ -7,6 +7,7 @@
 #include <network.hpp>
 #include <system.hpp>
 #include <asset.hpp>
+#include <settings.hpp>
 
 
 namespace rack {
@@ -35,8 +36,12 @@ static CURL* createCurl() {
 	// So tell curl not to signal.
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 
+	// Load root certificates
 	std::string caPath = asset::system("cacert.pem");
 	curl_easy_setopt(curl, CURLOPT_CAINFO, caPath.c_str());
+
+	// Don't verify HTTPS certificates if verifyHttpsCerts is false
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, settings::verifyHttpsCerts);
 
 	return curl;
 }

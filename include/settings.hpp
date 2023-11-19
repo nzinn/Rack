@@ -78,6 +78,7 @@ extern bool skipLoadOnLaunch;
 extern std::list<std::string> recentPatchPaths;
 extern std::vector<NVGcolor> cableColors;
 extern bool autoCheckUpdates;
+extern bool verifyHttpsCerts;
 extern bool showTipsOnLaunch;
 extern int tipIndex;
 enum BrowserSort {
