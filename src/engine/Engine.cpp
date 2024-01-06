@@ -5,9 +5,6 @@
 #include <mutex>
 #include <atomic>
 #include <tuple>
-#if defined ARCH_X64
-	#include <pmmintrin.h>
-#endif
 
 #include <engine/Engine.hpp>
 #include <settings.hpp>
@@ -17,22 +14,29 @@
 #include <patch.hpp>
 #include <plugin.hpp>
 #include <mutex.hpp>
+#include <simd/common.hpp>
 
 
 namespace rack {
 namespace engine {
 
 
-#if defined ARCH_X64
-static void initMXCSR() {
+static void initCpu() {
 	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
 	// https://software.intel.com/en-us/node/682949
+	// On ARM64, this is a SIMDe function.
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	// ARM64 always uses DAZ
+#if defined ARCH_X64
 	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-	// Reset other flags
+#endif
+
+	// Reset rounding mode
+#if !defined _MM_ROUND_NEAREST
+	#define _MM_ROUND_NEAREST 0x0000
+#endif
 	_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
 }
-#endif
 
 
 /** Barrier based on mutexes.
@@ -490,10 +494,8 @@ void Engine::stepBlock(int frames) {
 	std::lock_guard<std::mutex> stepLock(internal->blockMutex);
 	SharedLock<SharedMutex> lock(internal->mutex);
 	// Configure thread
-#if defined ARCH_X64
 	uint32_t csr = _mm_getcsr();
-	initMXCSR();
-#endif
+	initCpu();
 	random::init();
 
 	internal->blockFrame = internal->frame;
@@ -536,10 +538,8 @@ void Engine::stepBlock(int frames) {
 		internal->meterMax = 0.0;
 	}
 
-#if defined ARCH_X64
 	// Reset MXCSR back to original value
 	_mm_setcsr(csr);
-#endif
 }
 
 
@@ -1289,9 +1289,7 @@ void EngineWorker::run() {
 	// Configure thread
 	contextSet(engine->internal->context);
 	system::setThreadName(string::f("Worker %d", id));
-#if defined ARCH_X64
-	initMXCSR();
-#endif
+	initCpu();
 	random::init();
 
 	while (true) {
