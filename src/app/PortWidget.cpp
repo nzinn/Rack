@@ -78,25 +78,6 @@ struct PortTooltip : ui::Tooltip {
 };
 
 
-struct ColorMenuItem : ui::MenuItem {
-	NVGcolor color;
-
-	void draw(const DrawArgs& args) override {
-		MenuItem::draw(args);
-
-		// Color circle
-		nvgBeginPath(args.vg);
-		float radius = 6.0;
-		nvgCircle(args.vg, 8.0 + radius, box.size.y / 2, radius);
-		nvgFillColor(args.vg, color);
-		nvgFill(args.vg);
-		nvgStrokeWidth(args.vg, 1.0);
-		nvgStrokeColor(args.vg, color::mult(color, 0.5));
-		nvgStroke(args.vg);
-	}
-};
-
-
 struct PortCloneCableItem : ui::MenuItem {
 	PortWidget* pw;
 	CableWidget* cw;
@@ -118,7 +99,7 @@ struct PortCloneCableItem : ui::MenuItem {
 };
 
 
-struct CableColorItem : ColorMenuItem {
+struct CableColorItem : ui::ColorDotMenuItem {
 	CableWidget* cw;
 
 	void onAction(const ActionEvent& e) override {
@@ -134,7 +115,7 @@ struct CableColorItem : ColorMenuItem {
 };
 
 
-struct PortCableItem : ColorMenuItem {
+struct PortCableItem : ui::ColorDotMenuItem {
 	PortWidget* pw;
 	CableWidget* cw;
 
@@ -158,7 +139,7 @@ struct PortCableItem : ColorMenuItem {
 
 		for (NVGcolor color : settings::cableColors) {
 			// Include extra leading spaces for the color circle
-			CableColorItem* item = createMenuItem<CableColorItem>("     Set color");
+			CableColorItem* item = createMenuItem<CableColorItem>("Set color");
 			item->disabled = color::isEqual(color, cw->color);
 			item->cw = cw;
 			item->color = color;
@@ -170,7 +151,7 @@ struct PortCableItem : ColorMenuItem {
 };
 
 
-struct PortCreateCableItem : ColorMenuItem {
+struct PortCreateCableItem : ui::ColorDotMenuItem {
 	PortWidget* pw;
 
 	void onButton(const ButtonEvent& e) override {
@@ -283,7 +264,7 @@ void PortWidget::createContextMenu() {
 	bool createCableDisabled = (type == engine::Port::INPUT) && topCw;
 	for (NVGcolor color : settings::cableColors) {
 		// Include extra leading spaces for the color circle
-		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("     New cable", "Click+drag");
+		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("New cable", "Click+drag");
 		item->disabled = createCableDisabled;
 		item->pw = this;
 		item->color = color;
@@ -300,7 +281,7 @@ void PortWidget::createContextMenu() {
 			PortWidget* pw = (type == engine::Port::INPUT) ? cw->outputPort : cw->inputPort;
 			engine::PortInfo* portInfo = pw->getPortInfo();
 
-			PortCableItem* item = createMenuItem<PortCableItem>("     " + portInfo->module->model->name + ": " + portInfo->getName(), RIGHT_ARROW);
+			PortCableItem* item = createMenuItem<PortCableItem>(portInfo->module->model->name + ": " + portInfo->getName(), RIGHT_ARROW);
 			item->color = cw->color;
 			item->pw = this;
 			item->cw = cw;
