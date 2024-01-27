@@ -251,7 +251,7 @@ Example:
 	));
 */
 template <class TMenuItem = ui::MenuItem>
-ui::MenuItem* createCheckMenuItem(std::string text, std::string rightText, std::function<bool()> checked, std::function<void()> action, bool disabled = false, bool alwaysConsume = false) {
+TMenuItem* createCheckMenuItem(std::string text, std::string rightText, std::function<bool()> checked, std::function<void()> action, bool disabled = false, bool alwaysConsume = false) {
 	struct Item : TMenuItem {
 		std::string rightTextPrefix;
 		std::function<bool()> checked;
@@ -297,7 +297,7 @@ Example:
 	));
 */
 template <class TMenuItem = ui::MenuItem>
-ui::MenuItem* createBoolMenuItem(std::string text, std::string rightText, std::function<bool()> getter, std::function<void(bool state)> setter, bool disabled = false, bool alwaysConsume = false) {
+TMenuItem* createBoolMenuItem(std::string text, std::string rightText, std::function<bool()> getter, std::function<void(bool state)> setter, bool disabled = false, bool alwaysConsume = false) {
 	struct Item : TMenuItem {
 		std::string rightTextPrefix;
 		std::function<bool()> getter;
@@ -360,7 +360,7 @@ Example:
 	));
 */
 template <class TMenuItem = ui::MenuItem>
-ui::MenuItem* createSubmenuItem(std::string text, std::string rightText, std::function<void(ui::Menu* menu)> createMenu, bool disabled = false) {
+TMenuItem* createSubmenuItem(std::string text, std::string rightText, std::function<void(ui::Menu* menu)> createMenu, bool disabled = false) {
 	struct Item : TMenuItem {
 		std::function<void(ui::Menu* menu)> createMenu;
 
@@ -392,7 +392,7 @@ Example:
 	));
 */
 template <class TMenuItem = ui::MenuItem>
-ui::MenuItem* createIndexSubmenuItem(std::string text, std::vector<std::string> labels, std::function<size_t()> getter, std::function<void(size_t val)> setter, bool disabled = false, bool alwaysConsume = false) {
+TMenuItem* createIndexSubmenuItem(std::string text, std::vector<std::string> labels, std::function<size_t()> getter, std::function<void(size_t val)> setter, bool disabled = false, bool alwaysConsume = false) {
 	struct IndexItem : ui::MenuItem {
 		std::function<size_t()> getter;
 		std::function<void(size_t)> setter;
