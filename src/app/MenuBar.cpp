@@ -1,5 +1,6 @@
 #include <thread>
 #include <utility>
+#include <algorithm>
 
 #include <osdialog.h>
 
@@ -439,6 +440,7 @@ struct ViewButton : MenuButton {
 
 		menu->addChild(createBoolPtrMenuItem("Show tooltips", "", &settings::tooltips));
 
+		// Various sliders
 		ZoomSlider* zoomSlider = new ZoomSlider;
 		zoomSlider->box.size.x = 250.0;
 		menu->addChild(zoomSlider);
@@ -458,6 +460,76 @@ struct ViewButton : MenuButton {
 		HaloBrightnessSlider* haloBrightnessSlider = new HaloBrightnessSlider;
 		haloBrightnessSlider->box.size.x = 250.0;
 		menu->addChild(haloBrightnessSlider);
+
+		// Cable colors
+		menu->addChild(createSubmenuItem("Cable colors", "", [=](ui::Menu* menu) {
+			// TODO Subclass Menu to make an auto-refreshing list so user can Ctrl+click to keep menu open.
+
+			// Add color items
+			for (size_t i = 0; i < settings::cableColors.size(); i++) {
+				NVGcolor& color = settings::cableColors[i];
+				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(string::uppercase(color::toHexString(color)), string::f("%d", int(i + 1)), [=](ui::Menu* menu) {
+					// Helper for launching color dialog
+					auto selectColor = [](NVGcolor color) {
+						osdialog_color c = {
+							uint8_t(color.r * 255.f),
+							uint8_t(color.g * 255.f),
+							uint8_t(color.b * 255.f),
+							uint8_t(color.a * 255.f),
+						};
+						osdialog_color_picker(&c, false);
+						return nvgRGBA(c.r, c.g, c.b, c.a);
+					};
+
+					menu->addChild(createMenuItem("Set color", "", [=]() {
+						NVGcolor newColor = selectColor(color);
+						std::memcpy(&settings::cableColors[i], &newColor, sizeof(newColor));
+					}, false, true));
+					menu->addChild(createMenuItem("New color above", "", [=]() {
+						if (i > settings::cableColors.size())
+							return;
+						settings::cableColors.insert(settings::cableColors.begin() + i, selectColor(color));
+					}, false, true));
+					menu->addChild(createMenuItem("New color below", "", [=]() {
+						if (i + 1 > settings::cableColors.size())
+							return;
+						settings::cableColors.insert(settings::cableColors.begin() + i + 1, selectColor(color));
+					}, false, true));
+					menu->addChild(createMenuItem("Move up", "", [=]() {
+						if (i < 1 || i >= settings::cableColors.size())
+							return;
+						std::swap(settings::cableColors[i], settings::cableColors[i - 1]);
+					}, i < 1, true));
+					menu->addChild(createMenuItem("Move down", "", [=]() {
+						if (i + 1 >= settings::cableColors.size())
+							return;
+						std::swap(settings::cableColors[i], settings::cableColors[i + 1]);
+					}, i + 1 >= settings::cableColors.size()));
+					menu->addChild(createMenuItem("Delete", "", [=]() {
+						if (i >= settings::cableColors.size())
+							return;
+						settings::cableColors.erase(settings::cableColors.begin() + i);
+					}, settings::cableColors.size() <= 1, true));
+				});
+				item->color = color;
+				menu->addChild(item);
+			}
+
+			menu->addChild(createBoolMenuItem("Auto-rotate colors", "",
+				[=]() -> bool {
+					return settings::cableAutoRotate;
+				},
+				[=](bool s) {
+					APP->scene->rack->setNextCableColorId(0);
+					settings::cableAutoRotate = s;
+				}
+			));
+			menu->addChild(createMenuItem("Restore factory colors", "", [=]() {
+				if (!osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK_CANCEL, "Overwrite colors with factory defaults?"))
+					return;
+				settings::cableColorsReset();
+			}, false, true));
+		}));
 
 		menu->addChild(new ui::MenuSeparator);
 		menu->addChild(createMenuLabel("Parameters"));
