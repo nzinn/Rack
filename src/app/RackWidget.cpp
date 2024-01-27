@@ -1523,7 +1523,10 @@ NVGcolor RackWidget::getNextCableColor() {
 	if (settings::cableColors.empty())
 		return color::WHITE;
 
-	int id = internal->nextCableColorId++;
+	int id = internal->nextCableColorId;
+	if (settings::cableAutoRotate) {
+		internal->nextCableColorId++;
+	}
 	if (id >= (int) settings::cableColors.size())
 		id = 0;
 	if (internal->nextCableColorId >= (int) settings::cableColors.size())

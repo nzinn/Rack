@@ -77,6 +77,7 @@ extern float autosaveInterval;
 extern bool skipLoadOnLaunch;
 extern std::list<std::string> recentPatchPaths;
 extern std::vector<NVGcolor> cableColors;
+extern bool cableAutoRotate;
 extern bool autoCheckUpdates;
 extern bool verifyHttpsCerts;
 extern bool showTipsOnLaunch;
@@ -117,6 +118,7 @@ struct PluginWhitelist {
 extern std::map<std::string, PluginWhitelist> moduleWhitelist;
 
 bool isModuleWhitelisted(const std::string& pluginSlug, const std::string& moduleSlug);
+void cableColorsReset();
 
 PRIVATE void init();
 PRIVATE void destroy();
