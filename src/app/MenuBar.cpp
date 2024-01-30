@@ -467,7 +467,7 @@ struct ViewButton : MenuButton {
 
 			// Add color items
 			for (size_t i = 0; i < settings::cableColors.size(); i++) {
-				NVGcolor& color = settings::cableColors[i];
+				NVGcolor color = settings::cableColors[i];
 				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(string::uppercase(color::toHexString(color)), string::f("%d", int(i + 1)), [=](ui::Menu* menu) {
 					// Helper for launching color dialog
 					auto selectColor = [](NVGcolor color) {
@@ -482,16 +482,18 @@ struct ViewButton : MenuButton {
 					};
 
 					menu->addChild(createMenuItem("Set color", "", [=]() {
+						if (i >= settings::cableColors.size())
+							return;
 						NVGcolor newColor = selectColor(color);
 						std::memcpy(&settings::cableColors[i], &newColor, sizeof(newColor));
 					}, false, true));
 					menu->addChild(createMenuItem("New color above", "", [=]() {
-						if (i > settings::cableColors.size())
+						if (i >= settings::cableColors.size())
 							return;
 						settings::cableColors.insert(settings::cableColors.begin() + i, selectColor(color));
 					}, false, true));
 					menu->addChild(createMenuItem("New color below", "", [=]() {
-						if (i + 1 > settings::cableColors.size())
+						if (i >= settings::cableColors.size())
 							return;
 						settings::cableColors.insert(settings::cableColors.begin() + i + 1, selectColor(color));
 					}, false, true));
