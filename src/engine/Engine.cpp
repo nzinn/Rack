@@ -476,7 +476,6 @@ void Engine::stepBlock(int frames) {
 	std::lock_guard<std::mutex> stepLock(internal->blockMutex);
 	SharedLock<SharedMutex> lock(internal->mutex);
 	// Configure thread
-	uint32_t csr = _mm_getcsr();
 	system::initCpuFlags();
 	random::init();
 
@@ -519,9 +518,6 @@ void Engine::stepBlock(int frames) {
 		internal->meterTotal = 0.0;
 		internal->meterMax = 0.0;
 	}
-
-	// Reset MXCSR back to original value
-	_mm_setcsr(csr);
 }
 
 
