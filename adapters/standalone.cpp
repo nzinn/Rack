@@ -129,6 +129,7 @@ int main(int argc, char* argv[]) {
 
 	// Initialize environment
 	system::init();
+	system::initCpuFlags();
 	asset::init();
 	if (!settings::devMode) {
 		logger::logPath = asset::user("log.txt");

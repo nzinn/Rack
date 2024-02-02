@@ -1,6 +1,7 @@
 #include <thread>
 #include <regex>
 #include <chrono>
+#include <cfenv> // for std::fesetround
 #include <ghc/filesystem.hpp>
 
 #include <dirent.h>
@@ -38,6 +39,7 @@
 
 #include <system.hpp>
 #include <string.hpp>
+#include <simd/common.hpp>
 
 
 /*
@@ -952,6 +954,21 @@ void runProcessDetached(const std::string& path) {
 
 void init() {
 	initTime();
+}
+
+
+void initCpuFlags() {
+	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
+	// https://software.intel.com/en-us/node/682949
+	// On ARM64, this is a SIMDe function.
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	// ARM64 always uses DAZ
+#if defined ARCH_X64
+	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#endif
+
+	// Reset rounding mode to default (nearest)
+	std::fesetround(FE_TONEAREST);
 }
 
 

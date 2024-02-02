@@ -21,24 +21,6 @@ namespace rack {
 namespace engine {
 
 
-static void initCpu() {
-	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
-	// https://software.intel.com/en-us/node/682949
-	// On ARM64, this is a SIMDe function.
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	// ARM64 always uses DAZ
-#if defined ARCH_X64
-	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-#endif
-
-	// Reset rounding mode
-#if !defined _MM_ROUND_NEAREST
-	#define _MM_ROUND_NEAREST 0x0000
-#endif
-	_MM_SET_ROUNDING_MODE(_MM_ROUND_NEAREST);
-}
-
-
 /** Barrier based on mutexes.
 Not finished or tested, do not use.
 */
@@ -495,7 +477,7 @@ void Engine::stepBlock(int frames) {
 	SharedLock<SharedMutex> lock(internal->mutex);
 	// Configure thread
 	uint32_t csr = _mm_getcsr();
-	initCpu();
+	system::initCpuFlags();
 	random::init();
 
 	internal->blockFrame = internal->frame;
@@ -1289,7 +1271,7 @@ void EngineWorker::run() {
 	// Configure thread
 	contextSet(engine->internal->context);
 	system::setThreadName(string::f("Worker %d", id));
-	initCpu();
+	system::initCpuFlags();
 	random::init();
 
 	while (true) {

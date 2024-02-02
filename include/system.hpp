@@ -196,6 +196,9 @@ The launched process will continue running if the current process is closed.
 void runProcessDetached(const std::string& path);
 
 PRIVATE void init();
+/** Sets Rack-recommended CPU flags for the current thread.
+*/
+void initCpuFlags();
 
 
 } // namespace system
