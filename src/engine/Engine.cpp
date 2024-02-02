@@ -476,7 +476,7 @@ void Engine::stepBlock(int frames) {
 	std::lock_guard<std::mutex> stepLock(internal->blockMutex);
 	SharedLock<SharedMutex> lock(internal->mutex);
 	// Configure thread
-	system::initCpuFlags();
+	system::resetFpuFlags();
 	random::init();
 
 	internal->blockFrame = internal->frame;
@@ -1267,7 +1267,7 @@ void EngineWorker::run() {
 	// Configure thread
 	contextSet(engine->internal->context);
 	system::setThreadName(string::f("Worker %d", id));
-	system::initCpuFlags();
+	system::resetFpuFlags();
 	random::init();
 
 	while (true) {

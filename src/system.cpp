@@ -39,7 +39,6 @@
 
 #include <system.hpp>
 #include <string.hpp>
-#include <simd/common.hpp>
 
 
 /*
@@ -952,23 +951,49 @@ void runProcessDetached(const std::string& path) {
 }
 
 
-void init() {
-	initTime();
+uint32_t getFpuFlags() {
+#if defined ARCH_X64
+	return _mm_getcsr();
+#elif defined ARCH_ARM64
+	uint64_t fpcr;
+	__asm__ volatile("mrs %0, fpcr" : "=r" (fpcr));
+	return fpcr;
+#endif
+}
+
+void setFpuFlags(uint32_t flags) {
+#if defined ARCH_X64
+	_mm_setcsr(flags);
+#elif defined ARCH_ARM64
+	uint64_t fpcr = flags;
+	__asm__ volatile("msr fpcr, %0" :: "r" (fpcr));
+#endif
+}
+
+void resetFpuFlags() {
+	uint32_t flags = 0;
+
+#if defined ARCH_X64
+	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
+	// https://software.intel.com/en-us/node/682949
+	// _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+	flags |= 0x8000;
+	// _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+	flags |= 0x0040;
+	// Round-to-nearest is default
+#elif defined ARCH_ARM64
+	// Set Flush-to-Zero
+	flags |= 1 << 24;
+	// ARM64 always uses DAZ
+	// Round-to-nearest is default
+#endif
+
+	setFpuFlags(flags);
 }
 
 
-void initCpuFlags() {
-	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
-	// https://software.intel.com/en-us/node/682949
-	// On ARM64, this is a SIMDe function.
-	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-	// ARM64 always uses DAZ
-#if defined ARCH_X64
-	_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-#endif
-
-	// Reset rounding mode to default (nearest)
-	std::fesetround(FE_TONEAREST);
+void init() {
+	initTime();
 }
 
 
