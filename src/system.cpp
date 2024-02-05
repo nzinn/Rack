@@ -31,6 +31,8 @@
 	#include <dbghelp.h>
 #endif
 
+#include <simd/common.hpp> // for _mm_getcsr etc
+
 #include <archive.h>
 #include <archive_entry.h>
 #if defined ARCH_MAC
@@ -971,7 +973,7 @@ void setFpuFlags(uint32_t flags) {
 }
 
 void resetFpuFlags() {
-	uint32_t flags = 0;
+	uint32_t flags = getFpuFlags();
 
 #if defined ARCH_X64
 	// Set CPU to flush-to-zero (FTZ) and denormals-are-zero (DAZ) mode
@@ -981,11 +983,13 @@ void resetFpuFlags() {
 	// _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 	flags |= 0x0040;
 	// Round-to-nearest is default
+	flags &= ~0x6000;
 #elif defined ARCH_ARM64
 	// Set Flush-to-Zero
 	flags |= 1 << 24;
 	// ARM64 always uses DAZ
 	// Round-to-nearest is default
+	flags &= ~((1 << 22) | (1 << 23));
 #endif
 
 	setFpuFlags(flags);
