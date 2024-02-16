@@ -923,6 +923,8 @@ void Engine::addCable_NoLock(Cable* cable) {
 	for (Cable* cable2 : internal->cables) {
 		// Check that the cable is not already added
 		assert(cable2 != cable);
+		// Check that cable isn't similar to another cable
+		assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId && cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId));
 		// Check if input is already connected to a cable
 		if (cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId)
 			inputWasConnected = true;
@@ -1288,7 +1290,6 @@ void Engine::fromJson(json_t* rootJ) {
 		catch (Exception& e) {
 			WARN("Cannot load cable: %s", e.what());
 			delete cable;
-			// Don't log exceptions because missing modules create unnecessary complaining when cables try to connect to them.
 			continue;
 		}
 	}
