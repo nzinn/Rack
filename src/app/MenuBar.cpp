@@ -567,7 +567,7 @@ struct ViewButton : MenuButton {
 
 		menu->addChild(createBoolPtrMenuItem("Smart rearrangement", "", &settings::squeezeModules));
 
-		menu->addChild(createBoolPtrMenuItem("Use dark panels if available (experimental)", "", &settings::preferDarkPanels));
+		menu->addChild(createBoolPtrMenuItem("Use dark panels if available", "", &settings::preferDarkPanels));
 	}
 };
 
