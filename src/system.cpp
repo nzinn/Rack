@@ -867,7 +867,7 @@ std::string getOperatingSystemInfo() {
 
 	// Try to match version numbers to retail versions
 	if (major >= 20) {
-		if (major >= 22) {
+		if (major == 22) {
 			minor -= 1;
 		}
 		major -= 9;
