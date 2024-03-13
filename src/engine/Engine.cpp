@@ -373,7 +373,6 @@ static void Engine_stepFrame(Engine* that) {
 		// Sum all outputs to input value
 		for (Cable* cable : cables) {
 			Output* output = &cable->outputModule->outputs[cable->outputId];
-			Input* input = &cable->inputModule->inputs[cable->inputId];
 
 			auto finitize = [](float x) {
 				return std::isfinite(x) ? x : 0.f;
@@ -983,7 +982,7 @@ void Engine::removeCable_NoLock(Cable* cable) {
 	assert(it != internal->cables.end());
 	// Remove cable caches
 	{
-		auto v = internal->inputCablesCache[&input];
+		auto& v = internal->inputCablesCache[&input];
 		auto it = std::find(v.begin(), v.end(), cable);
 		assert(it != v.end());
 		v.erase(it);
