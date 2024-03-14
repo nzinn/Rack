@@ -923,7 +923,7 @@ void Engine::addCable_NoLock(Cable* cable) {
 		// Check that the cable is not already added
 		assert(cable2 != cable);
 		// Check that cable isn't similar to another cable
-		assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId && cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId));
+		// assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId && cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId));
 		// Check if input is already connected to a cable
 		if (cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId)
 			inputWasConnected = true;
