@@ -184,6 +184,10 @@ struct Engine::Internal {
 	std::map<int64_t, Cable*> cablesCache;
 	// (moduleId, paramId)
 	std::map<std::tuple<int64_t, int>, ParamHandle*> paramHandlesCache;
+	/** Cache of cables connected to each input
+	Only connected inputs are allowed.
+	*/
+	std::map<Input*, std::vector<Cable*>> inputCablesCache;
 
 	float sampleRate = 0.f;
 	float sampleTime = 0.f;
@@ -319,27 +323,6 @@ static void Engine_stepWorker(Engine* that, int threadId) {
 }
 
 
-static void Cable_step(Cable* that) {
-	Output* output = &that->outputModule->outputs[that->outputId];
-	Input* input = &that->inputModule->inputs[that->inputId];
-	// Match number of polyphonic channels to output port
-	int channels = output->channels;
-	// Copy all voltages from output to input
-	for (int c = 0; c < channels; c++) {
-		float v = output->voltages[c];
-		// Set 0V if infinite or NaN
-		if (!std::isfinite(v))
-			v = 0.f;
-		input->voltages[c] = v;
-	}
-	// Set higher channel voltages to 0
-	for (int c = channels; c < input->channels; c++) {
-		input->voltages[c] = 0.f;
-	}
-	input->channels = channels;
-}
-
-
 /** Steps a single frame
 */
 static void Engine_stepFrame(Engine* that) {
@@ -372,9 +355,43 @@ static void Engine_stepFrame(Engine* that) {
 	Engine_stepWorker(that, 0);
 	internal->workerBarrier.wait();
 
-	// Step cables
-	for (Cable* cable : that->internal->cables) {
-		Cable_step(cable);
+	// Step cables for each input
+	for (const auto& pair : internal->inputCablesCache) {
+		Input* input = pair.first;
+		const std::vector<Cable*>& cables = pair.second;
+		// Clear input voltages up to old number of input channels
+		for (int c = 0; c < input->channels; c++) {
+			input->voltages[c] = 0.f;
+		}
+		// Find max number of channels
+		uint8_t channels = 1;
+		for (Cable* cable : cables) {
+			Output* output = &cable->outputModule->outputs[cable->outputId];
+			channels = std::max(channels, output->channels);
+		}
+		input->channels = channels;
+		// Sum all outputs to input value
+		for (Cable* cable : cables) {
+			Output* output = &cable->outputModule->outputs[cable->outputId];
+
+			auto finitize = [](float x) {
+				return std::isfinite(x) ? x : 0.f;
+			};
+
+			// Sum monophonic value to all input channels
+			if (output->channels == 1) {
+				float value = finitize(output->voltages[0]);
+				for (int c = 0; c < channels; c++) {
+					input->voltages[c] += value;
+				}
+			}
+			// Sum polyphonic values to each input channel
+			else {
+				for (int c = 0; c < output->channels; c++) {
+					input->voltages[c] += finitize(output->voltages[c]);
+				}
+			}
+		}
 	}
 
 	// Flip messages for each module
@@ -898,34 +915,41 @@ void Engine::addCable_NoLock(Cable* cable) {
 	// Check cable properties
 	assert(cable->inputModule);
 	assert(cable->outputModule);
+	Input& input = cable->inputModule->inputs[cable->inputId];
+	Output& output = cable->outputModule->outputs[cable->outputId];
+	bool inputWasConnected = false;
 	bool outputWasConnected = false;
 	for (Cable* cable2 : internal->cables) {
 		// Check that the cable is not already added
 		assert(cable2 != cable);
-		// Check that the input is not already used by another cable
-		assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId));
+		// Check that cable isn't similar to another cable
+		// assert(!(cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId && cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId));
+		// Check if input is already connected to a cable
+		if (cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId)
+			inputWasConnected = true;
 		// Check if output is already connected to a cable
 		if (cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId)
 			outputWasConnected = true;
 	}
 	// Set ID if unset or collides with an existing ID
 	while (cable->id < 0 || internal->cablesCache.find(cable->id) != internal->cablesCache.end()) {
-		// Randomly generate ID
+		// Generate random 52-bit ID
 		cable->id = random::u64() % (1ull << 53);
 	}
 	// Add the cable
 	internal->cables.push_back(cable);
-	internal->cablesCache[cable->id] = cable;
-	// Set input as connected
-	Input& input = cable->inputModule->inputs[cable->inputId];
-	input.channels = 1;
-	// Set output as connected, which might already be connected
-	Output& output = cable->outputModule->outputs[cable->outputId];
-	if (output.channels == 0) {
+	// Set default number of input/output channels
+	if (!inputWasConnected) {
+		input.channels = 1;
+	}
+	if (!outputWasConnected) {
 		output.channels = 1;
 	}
+	// Add caches
+	internal->cablesCache[cable->id] = cable;
+	internal->inputCablesCache[&input].push_back(cable);
 	// Dispatch input port event
-	{
+	if (!inputWasConnected) {
 		Module::PortChangeEvent e;
 		e.connecting = true;
 		e.type = Port::INPUT;
@@ -951,42 +975,58 @@ void Engine::removeCable(Cable* cable) {
 
 void Engine::removeCable_NoLock(Cable* cable) {
 	assert(cable);
+	Input& input = cable->inputModule->inputs[cable->inputId];
+	Output& output = cable->outputModule->outputs[cable->outputId];
 	// Check that the cable is already added
 	auto it = std::find(internal->cables.begin(), internal->cables.end(), cable);
 	assert(it != internal->cables.end());
-	// Remove the cable
-	internal->cablesCache.erase(cable->id);
-	internal->cables.erase(it);
-	// Set input as disconnected
-	Input& input = cable->inputModule->inputs[cable->inputId];
-	input.channels = 0;
-	// Clear input values
-	for (uint8_t c = 0; c < PORT_MAX_CHANNELS; c++) {
-		input.setVoltage(0.f, c);
+	// Remove cable caches
+	{
+		auto& v = internal->inputCablesCache[&input];
+		auto it = std::find(v.begin(), v.end(), cable);
+		assert(it != v.end());
+		v.erase(it);
+		// Remove input from cache if no cables are connected
+		if (v.empty()) {
+			internal->inputCablesCache.erase(&input);
+		}
 	}
-	// Check if output is still connected to a cable
+	internal->cablesCache.erase(cable->id);
+	// Remove cable
+	internal->cables.erase(it);
+	// Check if input/output is still connected to a cable
+	bool inputIsConnected = false;
 	bool outputIsConnected = false;
 	for (Cable* cable2 : internal->cables) {
+		if (cable2->inputModule == cable->inputModule && cable2->inputId == cable->inputId) {
+			inputIsConnected = true;
+		}
 		if (cable2->outputModule == cable->outputModule && cable2->outputId == cable->outputId) {
 			outputIsConnected = true;
-			break;
+		}
+	}
+	// Set input as disconnected if disconnected from all cables
+	if (!inputIsConnected) {
+		input.channels = 0;
+		// Clear input values
+		for (uint8_t c = 0; c < PORT_MAX_CHANNELS; c++) {
+			input.setVoltage(0.f, c);
 		}
 	}
 	// Set output as disconnected if disconnected from all cables
 	if (!outputIsConnected) {
-		Output& output = cable->outputModule->outputs[cable->outputId];
 		output.channels = 0;
 		// Don't clear output values
 	}
 	// Dispatch input port event
-	{
+	if (!inputIsConnected) {
 		Module::PortChangeEvent e;
 		e.connecting = false;
 		e.type = Port::INPUT;
 		e.portId = cable->inputId;
 		cable->inputModule->onPortChange(e);
 	}
-	// Dispatch output port event if its state went from connected to disconnected.
+	// Dispatch output port event
 	if (!outputIsConnected) {
 		Module::PortChangeEvent e;
 		e.connecting = false;
@@ -1249,7 +1289,6 @@ void Engine::fromJson(json_t* rootJ) {
 		catch (Exception& e) {
 			WARN("Cannot load cable: %s", e.what());
 			delete cable;
-			// Don't log exceptions because missing modules create unnecessary complaining when cables try to connect to them.
 			continue;
 		}
 	}

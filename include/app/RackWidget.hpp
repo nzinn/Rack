@@ -127,6 +127,7 @@ struct RackWidget : widget::OpaqueWidget {
 	/** Returns the most recently added complete cable connected to the given Port, i.e. the top of the stack. */
 	CableWidget* getTopCable(PortWidget* port);
 	CableWidget* getCable(int64_t cableId);
+	CableWidget* getCable(PortWidget* outputPort, PortWidget* inputPort);
 	std::vector<CableWidget*> getCompleteCables();
 	/** Returns all cables attached to port, complete or not. */
 	std::vector<CableWidget*> getCablesOnPort(PortWidget* port);

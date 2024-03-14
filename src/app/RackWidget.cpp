@@ -1467,6 +1467,16 @@ CableWidget* RackWidget::getCable(int64_t cableId) {
 	return NULL;
 }
 
+CableWidget* RackWidget::getCable(PortWidget* outputPort, PortWidget* inputPort) {
+	for (widget::Widget* w : internal->cableContainer->children) {
+		CableWidget* cw = dynamic_cast<CableWidget*>(w);
+		assert(cw);
+		if (cw->outputPort == outputPort && cw->inputPort == inputPort)
+			return cw;
+	}
+	return NULL;
+}
+
 std::vector<CableWidget*> RackWidget::getCompleteCables() {
 	std::vector<CableWidget*> cws;
 	cws.reserve(internal->cableContainer->children.size());
