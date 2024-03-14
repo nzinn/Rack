@@ -250,7 +250,7 @@ void PortWidget::createContextMenu() {
 		!topCw
 	));
 
-	if (type == engine::Port::INPUT) {
+	{
 		PortCloneCableItem* item = createMenuItem<PortCloneCableItem>("Duplicate top cable", RACK_MOD_CTRL_NAME "+drag");
 		item->disabled = !topCw;
 		item->pw = this;
@@ -261,11 +261,9 @@ void PortWidget::createContextMenu() {
 	menu->addChild(new ui::MenuSeparator);
 
 	// New cable items
-	bool createCableDisabled = (type == engine::Port::INPUT) && topCw;
 	for (NVGcolor color : settings::cableColors) {
 		// Include extra leading spaces for the color circle
 		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("New cable", "Click+drag");
-		item->disabled = createCableDisabled;
 		item->pw = this;
 		item->color = color;
 		menu->addChild(item);
@@ -366,35 +364,31 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 	});
 
 	CableWidget* cw = NULL;
-	if (internal->overrideCreateCable) {
+	int mods = APP->window->getMods();
+	if (internal->overrideCreateCable || (mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		// Create cable with Ctrl+drag or PortCreateCableItem
 		// Keep cable NULL. Will be created below
 	}
-	else if (internal->overrideCloneCw || (APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
-		if (type == engine::Port::OUTPUT) {
-			// Ctrl-clicking an output creates a new cable.
-			// Keep cable NULL. Will be created below
-		}
-		else {
-			// Ctrl-clicking an input clones the cable already patched to it.
-			CableWidget* cloneCw;
-			if (internal->overrideCloneCw)
-				cloneCw = internal->overrideCloneCw;
-			else
-				cloneCw = APP->scene->rack->getTopCable(this);
+	else if (internal->overrideCloneCw || (mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		// Clone top cable with Ctrl+shift+drag or PortCloneCableItem
+		CableWidget* cloneCw = internal->overrideCloneCw;
+		if (!cloneCw)
+			cloneCw = APP->scene->rack->getTopCable(this);
 
-			if (cloneCw) {
-				cw = new CableWidget;
-				cw->color = cloneCw->color;
+		if (cloneCw) {
+			cw = new CableWidget;
+			cw->color = cloneCw->color;
+			if (type == engine::Port::OUTPUT)
+				cw->inputPort = cloneCw->inputPort;
+			else
 				cw->outputPort = cloneCw->outputPort;
-				cw->updateCable();
-			}
+			cw->updateCable();
 		}
 	}
 	else {
 		// Grab cable on top of stack
-		if (internal->overrideCw)
-			cw = internal->overrideCw;
-		else
+		cw = internal->overrideCw;
+		if (!cw)
 			cw = APP->scene->rack->getTopCable(this);
 
 		if (cw) {
@@ -414,13 +408,6 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 	}
 
 	if (!cw) {
-		// Check that inputs don't already have a cable
-		if (type == engine::Port::INPUT) {
-			CableWidget* topCw = APP->scene->rack->getTopCable(this);
-			if (topCw)
-				return;
-		}
-
 		// Create a new cable
 		cw = new CableWidget;
 
@@ -465,52 +452,44 @@ void PortWidget::onDragEnd(const DragEndEvent& e) {
 
 
 void PortWidget::onDragDrop(const DragDropEvent& e) {
+	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+		return;
+
 	// HACK: Only delete tooltip if we're not (normal) dragging it.
 	if (e.origin == this)
 		createTooltip();
 
-	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-		return;
-
-	// Reject ports if this is an input port and something is already plugged into it
-	if (type == engine::Port::INPUT) {
-		if (APP->scene->rack->getTopCable(this))
-			return;
-	}
-
 	CableWidget* cw = APP->scene->rack->getIncompleteCable();
 	if (cw) {
 		cw->hoveredOutputPort = cw->hoveredInputPort = NULL;
-		if (type == engine::Port::OUTPUT)
+		if (type == engine::Port::OUTPUT && cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
 			cw->outputPort = this;
-		else
+		}
+		if (type == engine::Port::INPUT && cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
 			cw->inputPort = this;
+		}
 		cw->updateCable();
 	}
 }
 
 
 void PortWidget::onDragEnter(const DragEnterEvent& e) {
+	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
+		return;
+
 	PortWidget* pw = dynamic_cast<PortWidget*>(e.origin);
 	if (pw) {
 		createTooltip();
 	}
 
-	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
-		return;
-
-	// Reject ports if this is an input port and something is already plugged into it
-	if (type == engine::Port::INPUT) {
-		if (APP->scene->rack->getTopCable(this))
-			return;
-	}
-
 	CableWidget* cw = APP->scene->rack->getIncompleteCable();
 	if (cw) {
-		if (type == engine::Port::OUTPUT)
+		if (type == engine::Port::OUTPUT && cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
 			cw->hoveredOutputPort = this;
-		else
+		}
+		if (type == engine::Port::INPUT && cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
 			cw->hoveredInputPort = this;
+		}
 	}
 }
 
@@ -529,7 +508,7 @@ void PortWidget::onDragLeave(const DragLeaveEvent& e) {
 	if (cw) {
 		if (type == engine::Port::OUTPUT)
 			cw->hoveredOutputPort = NULL;
-		else
+		if (type == engine::Port::INPUT)
 			cw->hoveredInputPort = NULL;
 	}
 }
