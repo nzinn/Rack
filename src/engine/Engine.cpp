@@ -235,25 +235,20 @@ struct Engine::Internal {
 
 
 static void Engine_updateExpander_NoLock(Engine* that, Module* module, uint8_t side) {
-	Module::Expander& expander = side ? module->rightExpander : module->leftExpander;
-	Module* oldExpanderModule = expander.module;
+	Module::Expander& expander = module->getExpander(side);
 
 	if (expander.moduleId >= 0) {
+		// Check if moduleId has changed from current module
 		if (!expander.module || expander.module->id != expander.moduleId) {
-			expander.module = that->getModule_NoLock(expander.moduleId);
+			Module* expanderModule = that->getModule_NoLock(expander.moduleId);
+			module->setExpanderModule(expanderModule, side);
 		}
 	}
 	else {
+		// Check if moduleId has unset module
 		if (expander.module) {
-			expander.module = NULL;
+			module->setExpanderModule(NULL, side);
 		}
-	}
-
-	if (expander.module != oldExpanderModule) {
-		// Dispatch ExpanderChangeEvent
-		Module::ExpanderChangeEvent e;
-		e.side = side;
-		module->onExpanderChange(e);
 	}
 }
 
@@ -502,8 +497,8 @@ void Engine::stepBlock(int frames) {
 
 	// Update expander pointers
 	for (Module* module : internal->modules) {
-		Engine_updateExpander_NoLock(this, module, false);
-		Engine_updateExpander_NoLock(this, module, true);
+		Engine_updateExpander_NoLock(this, module, 0);
+		Engine_updateExpander_NoLock(this, module, 1);
 	}
 
 	// Launch workers
@@ -760,23 +755,25 @@ void Engine::removeModule_NoLock(Module* module) {
 	}
 	// Update expanders of other modules
 	for (Module* m : internal->modules) {
-		if (m->leftExpander.module == module) {
-			m->leftExpander.moduleId = -1;
-			m->leftExpander.module = NULL;
+		for (uint8_t side = 0; side < 2; side++) {
+			Module::Expander& expander = m->getExpander(!side);
+			if (expander.moduleId == module->id) {
+				expander.moduleId = -1;
+			}
+			if (expander.module == module) {
+				m->setExpanderModule(NULL, !side);
+			}
 		}
-		if (m->rightExpander.module == module) {
-			m->rightExpander.moduleId = -1;
-			m->rightExpander.module = NULL;
-		}
+	}
+	// Update expanders of this module
+	for (uint8_t side = 0; side < 2; side++) {
+		Module::Expander& expander = module->getExpander(side);
+		expander.moduleId = -1;
+		module->setExpanderModule(NULL, side);
 	}
 	// Remove module
 	internal->modulesCache.erase(module->id);
 	internal->modules.erase(it);
-	// Reset expanders
-	module->leftExpander.moduleId = -1;
-	module->leftExpander.module = NULL;
-	module->rightExpander.moduleId = -1;
-	module->rightExpander.module = NULL;
 }
 
 
@@ -795,6 +792,8 @@ Module* Engine::getModule(int64_t moduleId) {
 
 
 Module* Engine::getModule_NoLock(int64_t moduleId) {
+	if (moduleId < 0)
+		return NULL;
 	auto it = internal->modulesCache.find(moduleId);
 	if (it == internal->modulesCache.end())
 		return NULL;
@@ -1046,6 +1045,8 @@ bool Engine::hasCable(Cable* cable) {
 
 
 Cable* Engine::getCable(int64_t cableId) {
+	if (cableId < 0)
+		return NULL;
 	SharedLock<SharedMutex> lock(internal->mutex);
 	auto it = internal->cablesCache.find(cableId);
 	if (it == internal->cablesCache.end())

@@ -392,6 +392,18 @@ void Module::jsonStripIds(json_t* rootJ) {
 }
 
 
+void Module::setExpanderModule(Module* module, uint8_t side) {
+	Expander& expander = getExpander(side);
+
+	if (expander.module != module) {
+		expander.module = module;
+		// Dispatch ExpanderChangeEvent
+		Module::ExpanderChangeEvent e;
+		e.side = side;
+		onExpanderChange(e);
+	}
+}
+
 
 } // namespace engine
 } // namespace rack
