@@ -46,8 +46,10 @@ static bool isTruncated() {
 }
 
 
-void init() {
-	assert(!outputFile);
+bool init() {
+	if (outputFile)
+		return true;
+
 	std::lock_guard<std::mutex> lock(mutex);
 	truncated = false;
 
@@ -61,13 +63,11 @@ void init() {
 		outputFile = std::fopen(logPath.c_str(), "w");
 		if (!outputFile) {
 			std::fprintf(stderr, "Could not open log at %s\n", logPath.c_str());
+			return false;
 		}
 	}
 
-	// Redirect stdout and stderr to the file
-	// Actually, disable this because we don't want to steal stdout/stderr from the DAW in Rack for DAWs.
-	// dup2(fileno(outputFile), fileno(stdout));
-	// dup2(fileno(outputFile), fileno(stderr));
+	return true;
 }
 
 void destroy() {
