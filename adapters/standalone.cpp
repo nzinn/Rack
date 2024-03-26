@@ -135,12 +135,13 @@ int main(int argc, char* argv[]) {
 		logger::logPath = asset::user("log.txt");
 	}
 	if (!logger::init()) {
-		std::string msg = "Cannot access Rack's user folder " + asset::userDir;
+		std::string msg = "Cannot access Rack's user folder:";
+		msg += "\n" + asset::userDir;
 #if defined ARCH_MAC
 		// The user likely clicked "Don't Allow" on the Documents Folder permissions dialog, so tell them how to allow it.
-		msg += "\n\nMake sure Rack has permission by opening Apple's System Settings and enabling Privacy & Security > Files and Folders > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + " > Documents Folder.";
+		msg += "\n\nGive permission to Rack by opening Apple's System Settings and enabling Privacy & Security > Files and Folders > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + " > Documents Folder.";
 		// Launch Apple's Privacy & Security settings
-		std::system("open x-apple.systempreferences:com.apple.preference.security");
+		// std::system("open x-apple.systempreferences:com.apple.preference.security");
 #endif
 		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
 		exit(1);
