@@ -94,6 +94,10 @@ build/%.m.o: %.m
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+build/%.mm.o: %.mm
+	@mkdir -p $(@D)
+	$(CC) $(CXXFLAGS) -c -o $@ $<
+
 build/%.bin.o: %
 	@mkdir -p $(@D)
 ifdef ARCH_LIN

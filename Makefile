@@ -43,6 +43,8 @@ ifdef ARCH_MAC
 	SED := sed -i ''
 	TARGET := libRack.dylib
 
+	SOURCES += $(wildcard src/*.m src/*/*.m)
+	SOURCES += $(wildcard src/*.mm src/*/*.mm)
 	SOURCES += dep/osdialog/osdialog_mac.m
 	LDFLAGS += -lpthread -ldl
 	LDFLAGS += -framework SystemConfiguration -framework Cocoa -framework OpenGL -framework IOKit -framework CoreVideo -framework CoreAudio -framework CoreMIDI
