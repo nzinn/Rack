@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 	// Handle will be closed by Windows when the process ends
 	HANDLE instanceMutex = CreateMutexW(NULL, true, string::UTF8toUTF16(APP_NAME).c_str());
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
-		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, "Rack is already running. Multiple Rack instances are not supported.");
+		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, "VCV Rack is already running. Multiple Rack instances are not supported.");
 		exit(1);
 	}
 	(void) instanceMutex;
@@ -135,11 +135,11 @@ int main(int argc, char* argv[]) {
 		logger::logPath = asset::user("log.txt");
 	}
 	if (!logger::init()) {
-		std::string msg = "Cannot access Rack's user folder:";
+		std::string msg = "Cannot access VCV Rack's user folder:";
 		msg += "\n" + asset::userDir;
 #if defined ARCH_MAC
 		// The user likely clicked "Don't Allow" on the Documents Folder permissions dialog, so tell them how to allow it.
-		msg += "\n\nGive permission to Rack by opening Apple's System Settings and enabling Privacy & Security > Files and Folders > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + " > Documents Folder.";
+		msg += "\n\nGive permission to VCV Rack by opening Apple's System Settings and enabling Privacy & Security > Files and Folders > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + " > Documents Folder.";
 		// Launch Apple's Privacy & Security settings
 		// std::system("open x-apple.systempreferences:com.apple.preference.security");
 #endif
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
 	// Check existence of the system res/ directory
 	std::string resDir = asset::system("res");
 	if (!system::isDirectory(resDir)) {
-		std::string message = string::f("Rack's resource directory \"%s\" does not exist. Make sure Rack is correctly installed and launched.", resDir.c_str());
+		std::string message = string::f("VCV Rack's resource directory \"%s\" does not exist. Make sure Rack is correctly installed and launched.", resDir.c_str());
 		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, message.c_str());
 		exit(1);
 	}
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
 	rtaudioInit();
 #if defined ARCH_MAC
 	if (rtaudioIsMicrophoneBlocked()) {
-		std::string msg = "Rack cannot access audio input because Microphone permission is blocked.";
+		std::string msg = "VCV Rack cannot access audio input because Microphone permission is blocked.";
 		msg += "\n\nGive permission to Rack by opening Apple's System Settings and enabling Privacy & Security > Microphone > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + ".";
 		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
 	}
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 	// Initialize patch
-	if (logger::wasTruncated() && osdialog_message(OSDIALOG_INFO, OSDIALOG_YES_NO, "Rack crashed during the last session, possibly due to a buggy module in your patch. Clear your patch and start over?")) {
+	if (logger::wasTruncated() && osdialog_message(OSDIALOG_INFO, OSDIALOG_YES_NO, "VCV Rack crashed during the last session, possibly due to a buggy module in your patch. Clear your patch and start over?")) {
 		// Do nothing, which leaves a blank patch
 	}
 	else {
