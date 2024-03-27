@@ -204,6 +204,13 @@ int main(int argc, char* argv[]) {
 	INFO("Initializing audio");
 	audio::init();
 	rtaudioInit();
+#if defined ARCH_MAC
+	if (rtaudioIsMicrophoneBlocked()) {
+		std::string msg = "Rack cannot access audio input because Microphone permission is blocked.";
+		msg += "\n\nGive permission to Rack by opening Apple's System Settings and enabling Privacy & Security > Microphone > " + APP_NAME + " " + APP_VERSION_MAJOR + " " + APP_EDITION_NAME + ".";
+		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
+	}
+#endif
 	INFO("Initializing MIDI");
 	midi::init();
 	rtmidiInit();
