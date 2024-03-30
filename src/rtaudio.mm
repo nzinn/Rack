@@ -11,7 +11,7 @@ bool rtaudioIsMicrophoneBlocked() {
 		return status == AVAuthorizationStatusRestricted || status == AVAuthorizationStatusDenied;
 	}
 	// On earlier versions, assume microphone is not blocked.
-	return true;
+	return false;
 }
 
 
