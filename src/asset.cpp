@@ -108,15 +108,23 @@ static void initUserDir() {
 	std::string oldUserDir;
 
 #if defined ARCH_WIN
-	// Get "My Documents" path
-	wchar_t documentsBufW[MAX_PATH] = L".";
-	HRESULT result = SHGetFolderPathW(NULL, CSIDL_MYDOCUMENTS, NULL, SHGFP_TYPE_CURRENT, documentsBufW);
-	assert(result == S_OK);
+	// Get AppData/Local path
+	WCHAR localBufW[MAX_PATH] = {};
+	HRESULT localH = SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, localBufW);
+	assert(SUCCEEDED(localH));
+	std::string localDir = string::UTF16toUTF8(localBufW);
+
+	// Usually C:/Users/<username>/AppData/Local/Rack2
+	userDir = system::join(localDir, "Rack" + APP_VERSION_MAJOR);
+
+	// Get Documents path
+	WCHAR documentsBufW[MAX_PATH] = {};
+	HRESULT documentsH = SHGetFolderPathW(NULL, CSIDL_MYDOCUMENTS, NULL, SHGFP_TYPE_CURRENT, documentsBufW);
+	assert(SUCCEEDED(documentsH));
+	std::string documentsDir = string::UTF16toUTF8(documentsBufW);
 
 	// Rack <2.5.0 used "My Documents/Rack2"
-	oldUserDir = system::join(string::UTF16toUTF8(documentsBufW), "Rack" + APP_VERSION_MAJOR);
-
-	// TODO new userDir
+	oldUserDir = system::join(documentsDir, "Rack" + APP_VERSION_MAJOR);
 #endif
 
 #if defined ARCH_MAC
