@@ -30,6 +30,11 @@ namespace rack {
 namespace asset {
 
 
+#if defined ARCH_MAC
+std::string getApplicationSupportDir();
+#endif
+
+
 static void initSystemDir() {
 	if (!systemDir.empty())
 		return;
@@ -115,25 +120,27 @@ static void initUserDir() {
 #endif
 
 #if defined ARCH_MAC
+	// Usually ~/Library/Application Support/Rack2
+	userDir = system::join(getApplicationSupportDir(), "Rack" + APP_VERSION_MAJOR);
+
 	// Get home directory
 	struct passwd* pw = getpwuid(getuid());
 	assert(pw);
+	std::string homeDir = pw->pw_dir;
 
 	// Rack <2.5.0 used ~/Documents/Rack2
-	oldUserDir = system::join(pw->pw_dir, "Documents", "Rack" + APP_VERSION_MAJOR);
-
-	// TODO new userDir
+	oldUserDir = system::join(homeDir, "Documents", "Rack" + APP_VERSION_MAJOR);
 #endif
 
 #if defined ARCH_LIN
 	// Get home path
-	const char* envHome = getenv("HOME");
-	if (!envHome) {
+	const char* homeBuf = getenv("HOME");
+	if (!homeBuf) {
 		struct passwd* pw = getpwuid(getuid());
 		assert(pw);
-		envHome = pw->pw_dir;
+		homeBuf = pw->pw_dir;
 	}
-	std::string homeDir = envHome;
+	std::string homeDir = homeBuf;
 
 	// Get XDG data path
 	const char* envData = getenv("XDG_DATA_HOME");
@@ -143,28 +150,31 @@ static void initUserDir() {
 	else {
 		userDir = system::join(homeDir, ".local", "share");
 	}
+	// Usually ~/.local/share/Rack2
 	userDir = system::join(userDir, "Rack" + APP_VERSION_MAJOR);
 
 	// Rack <2.5.0 used ~/.Rack2
 	oldUserDir = system::join(homeDir, ".Rack" + APP_VERSION_MAJOR);
 #endif
 
-	// If userDir doesn't exist but oldUserDir does, move it.
-	if (!system::isDirectory(userDir) && system::isDirectory(oldUserDir)) {
-		std::string msg = "Your Rack user folder has been moved from";
+	// If userDir doesn't exist but oldUserDir does, move it and inform user.
+	if (!oldUserDir.empty() && !system::isDirectory(userDir) && system::isDirectory(oldUserDir)) {
+		system::rename(oldUserDir, userDir);
+		std::string msg = APP_NAME + "'s user folder has been moved from";
 		msg += "\n" + oldUserDir;
 		msg += "\nto";
 		msg += "\n" + userDir;
-		osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
-		system::rename(oldUserDir, userDir);
+		osdialog_message(OSDIALOG_INFO, OSDIALOG_OK, msg.c_str());
 	}
+
+	// Create user dir if it doesn't exist
+	system::createDirectory(userDir);
 }
+
 
 void init() {
 	initSystemDir();
 	initUserDir();
-
-	system::createDirectory(userDir);
 }
 
 
