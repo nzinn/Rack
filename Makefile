@@ -1,6 +1,6 @@
 RACK_DIR ?= .
 VERSION_MAJOR := 2
-VERSION := 2.4.1
+VERSION := $(shell jq -r .version Core.json)
 
 FLAGS += -Iinclude -Idep/include
 
