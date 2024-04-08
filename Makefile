@@ -207,7 +207,7 @@ ifdef ARCH_MAC
 	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/Fundamental.vcvplugin
 	# Clean up and sign bundle
 	xattr -cr dist/"$(DIST_BUNDLE)"
-	codesign --verbose --sign "Developer ID Application: Andrew Belt (VRF26934X5)" --options runtime --entitlements Entitlements.plist --timestamp --deep dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"
+	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"
 	codesign --verify --deep --strict --verbose=2 dist/"$(DIST_BUNDLE)"
 	# Make standalone PKG
 	mkdir -p dist/Component
