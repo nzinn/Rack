@@ -2,6 +2,24 @@
 
 In this document, Ctrl means Cmd on Mac.
 
+### 2.5.0 (2024-04-08)
+- Allow stacking cables on input ports. Cable voltages are summed.
+- Ask to view unavailable modules on the VCV Library when loading a patch.
+- Add "View > Cable colors" menu to edit cable colors and disable auto-rotating colors.
+- Add parameter value functions `gaintodb()` (gain factor to decibels), `dbtogain()`, `vtof()` (1V/octave voltage to frequency), and `ftov()`.
+- Move Rack user folder to:
+	- Mac: `~/Library/Application Support/Rack2`
+	- Windows: `AppData/Local/Rack2`
+	- Linux: `~/.local/share/Rack2`
+- Update Mac icon.
+- If Microphone permission is blocked on Mac, show warning dialog on startup.
+- Add `"verifyHttpsCerts"` setting to disable verifying HTTPS certificates.
+- Rack Pro
+	- Fix MIDI note velocity scale in CLAP adapter.
+- API
+	- Don't zero output port voltages when disconnecting cables.
+	- Fix `ExpanderChangeEvent` not being dispatched when removing an adjacent module.
+
 ### 2.4.1 (2023-08-24)
 - Improve module browser search order.
 - Fix Library menu plugin update items not being re-enabled when downloading is completed.
