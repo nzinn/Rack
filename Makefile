@@ -270,16 +270,8 @@ endif
 # Target not supported for public use
 notarize:
 ifdef ARCH_MAC
-	xcrun altool --notarize-app --primary-bundle-id "com.vcvrack.rack" --username "andrew@vcvrack.com" --password @keychain:notarize --output-format xml --file dist/"$(DIST_NAME)".pkg > dist/UploadInfo.plist
-	# Wait for Apple's servers to approve the app
-	while true; do \
-		echo "Waiting on Apple servers..." ; \
-		sleep 10 ; \
-		xcrun altool --notarization-info `/usr/libexec/PlistBuddy -c "Print :notarization-upload:RequestUUID" dist/UploadInfo.plist` -u "andrew@vcvrack.com" -p @keychain:notarize --output-format xml > dist/RequestInfo.plist ; \
-		if [ "`/usr/libexec/PlistBuddy -c "Print :notarization-info:Status" dist/RequestInfo.plist`" != "in progress" ]; then \
-			break ; \
-		fi ; \
-	done
+	# Submit installer package to Apple
+	xcrun notarytool submit --keychain-profile "VCV" --wait dist/"$(DIST_NAME)".pkg
 	# Mark app as notarized
 	xcrun stapler staple dist/"$(DIST_NAME)".pkg
 	# Check notarization
