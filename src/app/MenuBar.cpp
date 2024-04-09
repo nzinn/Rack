@@ -468,7 +468,7 @@ struct ViewButton : MenuButton {
 			// Add color items
 			for (size_t i = 0; i < settings::cableColors.size(); i++) {
 				NVGcolor color = settings::cableColors[i];
-				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(string::uppercase(color::toHexString(color)), string::f("%d", int(i + 1)), [=](ui::Menu* menu) {
+				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(string::uppercase(color::toHexString(color)), "", [=](ui::Menu* menu) {
 					// Helper for launching color dialog
 					auto selectColor = [](NVGcolor color) {
 						osdialog_color c = {
