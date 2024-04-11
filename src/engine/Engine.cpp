@@ -1215,7 +1215,11 @@ json_t* Engine::toJson() {
 
 
 void Engine::fromJson(json_t* rootJ) {
+	clear();
+
 	// modules
+	// We can't instantiate modules before clearing because some modules add ParamHandles upon construction.
+	// We also can't lock while instantiating modules because they call addParamHandle() which locks.
 	std::vector<Module*> modules;
 	json_t* modulesJ = json_object_get(rootJ, "modules");
 	if (!modulesJ)
@@ -1256,8 +1260,6 @@ void Engine::fromJson(json_t* rootJ) {
 	}
 
 	std::lock_guard<SharedMutex> lock(internal->mutex);
-
-	clear_NoLock();
 
 	// Add modules
 	for (Module* module : modules) {
