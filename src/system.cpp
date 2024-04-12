@@ -41,6 +41,7 @@
 
 #include <system.hpp>
 #include <string.hpp>
+#include <logger.hpp>
 
 
 /*
@@ -892,6 +893,8 @@ void openBrowser(const std::string& url) {
 	if (url.empty())
 		return;
 
+	INFO("Opening browser URL %s", url.c_str());
+
 	std::string urlL = url;
 	std::thread t([=] {
 #if defined ARCH_LIN
@@ -913,6 +916,8 @@ void openBrowser(const std::string& url) {
 void openDirectory(const std::string& path) {
 	if (path.empty())
 		return;
+
+	INFO("Opening directory %s", path.c_str());
 
 	std::string pathL = path;
 	std::thread t([=] {
