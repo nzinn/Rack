@@ -46,7 +46,9 @@ struct Manager {
 	void loadTemplate();
 	void loadTemplateDialog();
 	bool hasAutosave();
-	/** Loads the patch from the autosave folder. */
+	/** Loads the patch from the autosave folder.
+	Throws if loading failed.
+	*/
 	void loadAutosave();
 	/** Loads a patch, sets the current path, and updates the recent patches. */
 	void loadAction(std::string path);

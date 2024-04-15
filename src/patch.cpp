@@ -24,7 +24,6 @@ static const char PATCH_FILTERS[] = "VCV Rack patch (.vcv):vcv";
 
 
 struct Manager::Internal {
-	bool disableAutosaveOnClose = false;
 };
 
 
@@ -51,15 +50,13 @@ Manager::~Manager() {
 		return;
 	}
 
-	if (!internal->disableAutosaveOnClose) {
-		// Dispatch onSave to all Modules so they save their patch storage, etc.
-		APP->engine->prepareSave();
-		// Save autosave if not headless
-		if (!settings::headless) {
-			APP->patch->saveAutosave();
-		}
-		cleanAutosave();
+	// Dispatch onSave to all Modules so they save their patch storage, etc.
+	APP->engine->prepareSave();
+	// Save autosave if not headless
+	if (!settings::headless) {
+		APP->patch->saveAutosave();
 	}
+	cleanAutosave();
 
 	delete internal;
 }
@@ -360,8 +357,7 @@ void Manager::loadAutosave() {
 		throw Exception("Failed to load patch. JSON parsing error at %s %d:%d %s", error.source, error.line, error.column, error.text);
 	DEFER({json_decref(rootJ);});
 
-	if (checkUnavailableModulesJson(rootJ))
-		return;
+	checkUnavailableModulesJson(rootJ);
 
 	fromJson(rootJ);
 }
@@ -573,18 +569,18 @@ bool Manager::checkUnavailableModulesJson(json_t* rootJ) {
 	}
 
 	if (!pluginModuleSlugs.empty()) {
-		std::string msg = "This patch includes modules that are not installed. Close Rack and show missing modules on the VCV Library?";
+		// Ask user to open browser
+		std::string msg = "This patch includes modules that are not installed:";
+		msg += "\n\n";
+		msg += string::join(pluginModuleSlugs, "\n");
+		msg += "\n\n";
+		msg += "Show missing modules on the VCV Library?";
 		if (osdialog_message(OSDIALOG_WARNING, OSDIALOG_YES_NO, msg.c_str())) {
 			std::string url = "https://library.vcvrack.com/?modules=";
 			url += string::join(pluginModuleSlugs, ",");
 			system::openBrowser(url);
-			// Close Rack
-			APP->window->close();
-			// Don't save autosave when closing
-			// Possible bug: The autosave internal could still occur before the window closes
-			internal->disableAutosaveOnClose = true;
-			return true;
 		}
+		return true;
 	}
 	return false;
 }
