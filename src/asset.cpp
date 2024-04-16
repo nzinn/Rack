@@ -165,14 +165,25 @@ static void initUserDir() {
 	oldUserDir = system::join(homeDir, ".Rack" + APP_VERSION_MAJOR);
 #endif
 
-	// If userDir doesn't exist but oldUserDir does, move it and inform user.
+	// If userDir doesn't exist but oldUserDir does, attempt to move it and inform user.
 	if (!oldUserDir.empty() && !system::isDirectory(userDir) && system::isDirectory(oldUserDir)) {
-		system::rename(oldUserDir, userDir);
-		std::string msg = APP_NAME + "'s user folder has been moved from";
-		msg += "\n" + oldUserDir;
-		msg += "\nto";
-		msg += "\n" + userDir;
-		osdialog_message(OSDIALOG_INFO, OSDIALOG_OK, msg.c_str());
+		if (system::rename(oldUserDir, userDir)) {
+			std::string msg = APP_NAME + "'s user folder has been moved from";
+			msg += "\n" + oldUserDir;
+			msg += "\nto";
+			msg += "\n" + userDir;
+			osdialog_message(OSDIALOG_INFO, OSDIALOG_OK, msg.c_str());
+		}
+		else {
+			std::string msg = "Failed to move " + APP_NAME + "'s user folder from";
+			msg += "\n" + oldUserDir;
+			msg += "\nto";
+			msg += "\n" + userDir;
+			msg += "\ndue to insufficient access permissions. Consider moving this folder manually to ensure compatibility with future versions.";
+			osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
+			// Move failed, just use the old dir instead
+			userDir = oldUserDir;
+		}
 	}
 
 	// Create user dir if it doesn't exist
