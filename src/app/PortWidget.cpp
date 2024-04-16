@@ -20,7 +20,6 @@ struct PortWidget::Internal {
 	CableWidget* overrideCw = NULL;
 	CableWidget* overrideCloneCw = NULL;
 	bool overrideCreateCable = false;
-	NVGcolor overrideColor = color::BLACK_TRANSPARENT;
 };
 
 
@@ -153,15 +152,16 @@ struct PortCableItem : ui::ColorDotMenuItem {
 
 struct PortCreateCableItem : ui::ColorDotMenuItem {
 	PortWidget* pw;
+	size_t colorId;
 
 	void onButton(const ButtonEvent& e) override {
 		OpaqueWidget::onButton(e);
 		if (disabled)
 			return;
 		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT && (e.mods & RACK_MOD_MASK) == 0) {
+			APP->scene->rack->setNextCableColorId(colorId);
 			// Set PortWidget::onDragStart overrides
 			pw->internal->overrideCreateCable = true;
-			pw->internal->overrideColor = color;
 
 			// Pretend the PortWidget was clicked
 			e.consume(pw);
@@ -261,11 +261,13 @@ void PortWidget::createContextMenu() {
 	menu->addChild(new ui::MenuSeparator);
 
 	// New cable items
-	for (NVGcolor color : settings::cableColors) {
+	for (size_t colorId = 0; colorId < settings::cableColors.size(); colorId++) {
+		NVGcolor color = settings::cableColors[colorId];
 		// Include extra leading spaces for the color circle
 		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("New cable", "Click+drag");
 		item->pw = this;
 		item->color = color;
+		item->colorId = colorId;
 		menu->addChild(item);
 	}
 
@@ -360,7 +362,6 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 		internal->overrideCw = NULL;
 		internal->overrideCloneCw = NULL;
 		internal->overrideCreateCable = false;
-		internal->overrideColor = color::BLACK_TRANSPARENT;
 	});
 
 	CableWidget* cw = NULL;
@@ -412,10 +413,7 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 		cw = new CableWidget;
 
 		// Set color
-		if (internal->overrideCreateCable)
-			cw->color = internal->overrideColor;
-		else
-			cw->color = APP->scene->rack->getNextCableColor();
+		cw->color = APP->scene->rack->getNextCableColor();
 
 		// Set port
 		if (type == engine::Port::OUTPUT)

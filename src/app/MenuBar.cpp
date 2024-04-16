@@ -522,7 +522,6 @@ struct ViewButton : MenuButton {
 					return settings::cableAutoRotate;
 				},
 				[=](bool s) {
-					APP->scene->rack->setNextCableColorId(0);
 					settings::cableAutoRotate = s;
 				}
 			));
