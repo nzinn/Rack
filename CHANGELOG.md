@@ -2,6 +2,12 @@
 
 In this document, Ctrl means Cmd on Mac.
 
+### 2.5.1 (2024-04-16)
+- Remember the last selected cable color from the port's "New cable" menu item. When "Auto-rotate cables" is enabled, the next color in the rotation is used.
+- Fix crash when modules such as VCV MIDI-Map bind parameters.
+- If loaded patch contains unavailable modules, don't close Rack after user chooses to open them in VCV Library. Instead, load patch without these modules so user can download them.
+- Add error dialog if moving Rack's user folder to new location fails.
+
 ### 2.5.0 (2024-04-08)
 - Allow stacking cables on input ports. Cable voltages are summed.
 - Ask to view unavailable modules on the VCV Library when loading a patch.
