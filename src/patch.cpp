@@ -47,16 +47,16 @@ Manager::~Manager() {
 	// In safe mode, delete autosave dir.
 	if (settings::safeMode) {
 		clearAutosave();
-		return;
 	}
-
-	// Dispatch onSave to all Modules so they save their patch storage, etc.
-	APP->engine->prepareSave();
-	// Save autosave if not headless
-	if (!settings::headless) {
-		APP->patch->saveAutosave();
+	else {
+		// Dispatch onSave to all Modules so they save their patch storage, etc.
+		APP->engine->prepareSave();
+		// Save autosave if not headless
+		if (!settings::headless) {
+			APP->patch->saveAutosave();
+		}
+		cleanAutosave();
 	}
-	cleanAutosave();
 
 	delete internal;
 }
