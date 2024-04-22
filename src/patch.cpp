@@ -155,14 +155,19 @@ void Manager::saveDialog() {
 void Manager::saveAsDialog(bool setPath) {
 	std::string dir;
 	std::string filename;
-	if (this->path == "") {
-		dir = asset::user("patches");
-		system::createDirectories(dir);
-		filename = "Untitled.vcv";
-	}
-	else {
+	if (this->path != "") {
 		dir = system::getDirectory(this->path);
 		filename = system::getFilename(this->path);
+	}
+
+	// Default to <Rack user dir>/patches
+	if (dir == "" || !system::isDirectory(dir)) {
+		dir = asset::user("patches");
+		system::createDirectories(dir);
+	}
+
+	if (filename == "") {
+		filename = "Untitled.vcv";
 	}
 
 	osdialog_filters* filters = osdialog_filters_parse(PATCH_FILTERS);
@@ -384,12 +389,14 @@ void Manager::loadDialog() {
 		return;
 
 	std::string dir;
-	if (this->path == "") {
+	if (this->path != "") {
+		dir = system::getDirectory(this->path);
+	}
+
+	// Default to <Rack user dir>/patches
+	if (dir == "" || !system::isDirectory(dir)) {
 		dir = asset::user("patches");
 		system::createDirectory(dir);
-	}
-	else {
-		dir = system::getDirectory(this->path);
 	}
 
 	osdialog_filters* filters = osdialog_filters_parse(PATCH_FILTERS);
