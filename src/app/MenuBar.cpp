@@ -468,49 +468,88 @@ struct ViewButton : MenuButton {
 			// Add color items
 			for (size_t i = 0; i < settings::cableColors.size(); i++) {
 				NVGcolor color = settings::cableColors[i];
-				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(string::uppercase(color::toHexString(color)), "", [=](ui::Menu* menu) {
+				std::string label = get(settings::cableLabels, i);
+				std::string labelFallback = (label != "") ? label : string::f("Color #%lld", (long long) (i + 1));
+
+				ui::ColorDotMenuItem* item = createSubmenuItem<ui::ColorDotMenuItem>(labelFallback, "", [=](ui::Menu* menu) {
 					// Helper for launching color dialog
-					auto selectColor = [](NVGcolor color) {
+					auto selectColor = [](NVGcolor& color) -> bool {
 						osdialog_color c = {
 							uint8_t(color.r * 255.f),
 							uint8_t(color.g * 255.f),
 							uint8_t(color.b * 255.f),
 							uint8_t(color.a * 255.f),
 						};
-						osdialog_color_picker(&c, false);
-						return nvgRGBA(c.r, c.g, c.b, c.a);
+						if (!osdialog_color_picker(&c, false))
+							return false;
+						color = nvgRGBA(c.r, c.g, c.b, c.a);
+						return true;
 					};
+
+					menu->addChild(createMenuItem("Set label", "", [=]() {
+						if (i >= settings::cableColors.size())
+							return;
+						char* s = osdialog_prompt(OSDIALOG_INFO, "", label.c_str());
+						if (!s)
+							return;
+						settings::cableLabels.resize(settings::cableColors.size());
+						settings::cableLabels[i] = s;
+						free(s);
+					}, false, true));
 
 					menu->addChild(createMenuItem("Set color", "", [=]() {
 						if (i >= settings::cableColors.size())
 							return;
-						NVGcolor newColor = selectColor(color);
+						NVGcolor newColor = color;
+						if (!selectColor(newColor))
+							return;
 						std::memcpy(&settings::cableColors[i], &newColor, sizeof(newColor));
 					}, false, true));
+
 					menu->addChild(createMenuItem("New color above", "", [=]() {
 						if (i >= settings::cableColors.size())
 							return;
-						settings::cableColors.insert(settings::cableColors.begin() + i, selectColor(color));
+						NVGcolor newColor = color;
+						if (!selectColor(newColor))
+							return;
+						settings::cableLabels.resize(settings::cableColors.size());
+						settings::cableColors.insert(settings::cableColors.begin() + i, newColor);
+						settings::cableLabels.insert(settings::cableLabels.begin() + i, "");
 					}, false, true));
+
 					menu->addChild(createMenuItem("New color below", "", [=]() {
 						if (i >= settings::cableColors.size())
 							return;
-						settings::cableColors.insert(settings::cableColors.begin() + i + 1, selectColor(color));
+						NVGcolor newColor = color;
+						if (!selectColor(newColor))
+							return;
+						settings::cableLabels.resize(settings::cableColors.size());
+						settings::cableColors.insert(settings::cableColors.begin() + i + 1, newColor);
+						settings::cableLabels.insert(settings::cableLabels.begin() + i + 1, "");
 					}, false, true));
+
 					menu->addChild(createMenuItem("Move up", "", [=]() {
 						if (i < 1 || i >= settings::cableColors.size())
 							return;
+						settings::cableLabels.resize(settings::cableColors.size());
 						std::swap(settings::cableColors[i], settings::cableColors[i - 1]);
+						std::swap(settings::cableLabels[i], settings::cableLabels[i - 1]);
 					}, i < 1, true));
+
 					menu->addChild(createMenuItem("Move down", "", [=]() {
 						if (i + 1 >= settings::cableColors.size())
 							return;
+						settings::cableLabels.resize(settings::cableColors.size());
 						std::swap(settings::cableColors[i], settings::cableColors[i + 1]);
+						std::swap(settings::cableLabels[i], settings::cableLabels[i + 1]);
 					}, i + 1 >= settings::cableColors.size()));
+
 					menu->addChild(createMenuItem("Delete", "", [=]() {
 						if (i >= settings::cableColors.size())
 							return;
+						settings::cableLabels.resize(settings::cableColors.size());
 						settings::cableColors.erase(settings::cableColors.begin() + i);
+						settings::cableLabels.erase(settings::cableLabels.begin() + i);
 					}, settings::cableColors.size() <= 1, true));
 				});
 				item->color = color;
@@ -528,7 +567,7 @@ struct ViewButton : MenuButton {
 			menu->addChild(createMenuItem("Restore factory colors", "", [=]() {
 				if (!osdialog_message(OSDIALOG_WARNING, OSDIALOG_OK_CANCEL, "Overwrite colors with factory defaults?"))
 					return;
-				settings::cableColorsReset();
+				settings::resetCables();
 			}, false, true));
 		}));
 

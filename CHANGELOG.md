@@ -2,6 +2,9 @@
 
 In this document, Ctrl means Cmd on Mac.
 
+### 2.5.2 (in development)
+- Add configurable cable color labels.
+
 ### 2.5.1 (2024-04-16)
 - Remember the last selected cable color from the port's "New cable" menu item. When "Auto-rotate cables" is enabled, the next color in the rotation is used.
 - Fix crash when modules such as VCV MIDI-Map bind parameters.

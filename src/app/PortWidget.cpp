@@ -263,8 +263,10 @@ void PortWidget::createContextMenu() {
 	// New cable items
 	for (size_t colorId = 0; colorId < settings::cableColors.size(); colorId++) {
 		NVGcolor color = settings::cableColors[colorId];
-		// Include extra leading spaces for the color circle
-		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("New cable", "Click+drag");
+		std::string label = get(settings::cableLabels, colorId);
+		if (label == "")
+			label = string::f("Color #%lld", (long long) (colorId + 1));
+		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>(label, "Click+drag");
 		item->pw = this;
 		item->color = color;
 		item->colorId = colorId;

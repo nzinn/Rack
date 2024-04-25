@@ -55,6 +55,7 @@ bool skipLoadOnLaunch = false;
 std::list<std::string> recentPatchPaths;
 bool cableAutoRotate = true;
 std::vector<NVGcolor> cableColors;
+std::vector<std::string> cableLabels;
 bool autoCheckUpdates = true;
 bool verifyHttpsCerts = true;
 bool showTipsOnLaunch = true;
@@ -94,7 +95,7 @@ bool isModuleWhitelisted(const std::string& pluginSlug, const std::string& modul
 }
 
 
-void cableColorsReset() {
+void resetCables() {
 	cableColors = {
 		color::fromHexString("#f3374b"), // red
 		color::fromHexString("#ffb437"), // yellow
@@ -102,12 +103,14 @@ void cableColorsReset() {
 		color::fromHexString("#3695ef"), // blue
 		color::fromHexString("#8b4ade"), // purple
 	};
+	cableLabels.clear();
+	cableLabels.resize(cableColors.size());
 }
 
 
 void init() {
 	settingsPath = asset::user("settings.json");
-	cableColorsReset();
+	resetCables();
 }
 
 
@@ -187,11 +190,17 @@ json_t* toJson() {
 	json_object_set_new(rootJ, "recentPatchPaths", recentPatchPathsJ);
 
 	json_t* cableColorsJ = json_array();
-	for (NVGcolor cableColor : cableColors) {
+	for (const NVGcolor& cableColor : cableColors) {
 		std::string colorStr = color::toHexString(cableColor);
 		json_array_append_new(cableColorsJ, json_string(colorStr.c_str()));
 	}
 	json_object_set_new(rootJ, "cableColors", cableColorsJ);
+
+	json_t* cableLabelsJ = json_array();
+	for (const std::string& cableLabel : cableLabels) {
+		json_array_append_new(cableLabelsJ, json_string(cableLabel.c_str()));
+	}
+	json_object_set_new(rootJ, "cableLabels", cableLabelsJ);
 
 	json_object_set_new(rootJ, "cableAutoRotate", json_boolean(cableAutoRotate));
 
@@ -416,6 +425,16 @@ void fromJson(json_t* rootJ) {
 		json_array_foreach(cableColorsJ, i, cableColorJ) {
 			std::string colorStr = json_string_value(cableColorJ);
 			cableColors.push_back(color::fromHexString(colorStr));
+		}
+	}
+
+	cableLabels.clear();
+	json_t* cableLabelsJ = json_object_get(rootJ, "cableLabels");
+	if (cableLabelsJ) {
+		size_t i;
+		json_t* cableLabelJ;
+		json_array_foreach(cableLabelsJ, i, cableLabelJ) {
+			cableLabels.push_back(json_string_value(cableLabelJ));
 		}
 	}
 
