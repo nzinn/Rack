@@ -18,6 +18,7 @@ struct SharedMutex {
 
 	SharedMutex() {
 		int err = pthread_rwlock_init(&rwlock, NULL);
+		(void) err;
 		assert(!err);
 	}
 	~SharedMutex() {
@@ -26,6 +27,7 @@ struct SharedMutex {
 
 	void lock() {
 		int err = pthread_rwlock_wrlock(&rwlock);
+		(void) err;
 		assert(!err);
 	}
 	/** Returns whether the lock was acquired. */
@@ -34,11 +36,13 @@ struct SharedMutex {
 	}
 	void unlock() {
 		int err = pthread_rwlock_unlock(&rwlock);
+		(void) err;
 		assert(!err);
 	}
 
 	void lock_shared() {
 		int err = pthread_rwlock_rdlock(&rwlock);
+		(void) err;
 		assert(!err);
 	}
 	/** Returns whether the lock was acquired. */
