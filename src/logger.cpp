@@ -15,6 +15,7 @@ std::string logPath;
 static FILE* outputFile = NULL;
 static std::mutex mutex;
 static bool truncated = false;
+const static long maxSize = 10 * 1000 * 1000; // 10 MB
 
 
 static bool fileEndsWith(FILE* file, std::string str) {
@@ -97,7 +98,17 @@ static const int levelColors[] = {
 static void logVa(Level level, const char* filename, int line, const char* func, const char* format, va_list args) {
 	if (!outputFile)
 		return;
+
+	// Record logging time before calling OS functions
 	double nowTime = system::getTime();
+
+	// Check if log size is full
+	if (outputFile != stderr) {
+		long pos = std::ftell(outputFile);
+		if (pos >= maxSize)
+			return;
+	}
+
 	std::lock_guard<std::mutex> lock(mutex);
 
 	if (outputFile == stderr)
