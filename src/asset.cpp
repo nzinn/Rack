@@ -105,8 +105,6 @@ static void initUserDir() {
 		return;
 	}
 
-	std::string oldUserDir;
-
 #if defined ARCH_WIN
 	// Get AppData/Local path
 	WCHAR localBufW[MAX_PATH] = {};
@@ -166,7 +164,7 @@ static void initUserDir() {
 #endif
 
 	// If userDir doesn't exist but oldUserDir does, attempt to move it and inform user.
-	if (!oldUserDir.empty() && !system::isDirectory(userDir) && system::isDirectory(oldUserDir)) {
+	if (oldUserDir != "" && !system::isDirectory(userDir) && system::isDirectory(oldUserDir)) {
 		if (system::rename(oldUserDir, userDir)) {
 			std::string msg = APP_NAME + "'s user folder has been moved from";
 			msg += "\n" + oldUserDir;
@@ -179,11 +177,15 @@ static void initUserDir() {
 			msg += "\n" + oldUserDir;
 			msg += "\nto";
 			msg += "\n" + userDir;
-			msg += "\ndue to insufficient access permissions. Consider moving this folder manually to ensure compatibility with future versions.";
+			msg += "\nConsider moving this folder manually to ensure compatibility with future versions.";
 			osdialog_message(OSDIALOG_ERROR, OSDIALOG_OK, msg.c_str());
 			// Move failed, just use the old dir instead
 			userDir = oldUserDir;
+			oldUserDir = "";
 		}
+	}
+	else {
+		oldUserDir = "";
 	}
 
 	// Create user dir if it doesn't exist
@@ -215,6 +217,7 @@ std::string plugin(plugin::Plugin* plugin, std::string filename) {
 
 std::string systemDir;
 std::string userDir;
+std::string oldUserDir;
 
 std::string bundlePath;
 

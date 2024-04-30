@@ -416,6 +416,14 @@ void fromJson(json_t* rootJ) {
 			recentPatchPaths.push_back(path);
 		}
 	}
+	// Update recent patches to use new dir
+	if (asset::oldUserDir != "") {
+		for (std::string& path : recentPatchPaths) {
+			if (string::startsWith(path, asset::oldUserDir)) {
+				path.replace(0, asset::oldUserDir.size(), asset::userDir);
+			}
+		}
+	}
 
 	cableColors.clear();
 	json_t* cableColorsJ = json_object_get(rootJ, "cableColors");
