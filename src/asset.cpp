@@ -1,3 +1,5 @@
+#include <arch.hpp>
+
 #if defined ARCH_MAC
 	#include <CoreFoundation/CoreFoundation.h>
 	#include <CoreServices/CoreServices.h>

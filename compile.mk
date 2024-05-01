@@ -28,20 +28,16 @@ endif
 
 # Architecture-independent flags
 ifdef ARCH_X64
-	FLAGS += -DARCH_X64
 	FLAGS += -march=nehalem
 endif
 ifdef ARCH_ARM64
-	FLAGS += -DARCH_ARM64
 	FLAGS += -march=armv8-a+fp+simd
 endif
 
 ifdef ARCH_LIN
-	FLAGS += -DARCH_LIN
 	CXXFLAGS += -Wsuggest-override
 endif
 ifdef ARCH_MAC
-	FLAGS += -DARCH_MAC
 	CXXFLAGS += -stdlib=libc++
 	LDFLAGS += -stdlib=libc++
 	MAC_SDK_FLAGS := -mmacosx-version-min=10.9
@@ -49,7 +45,6 @@ ifdef ARCH_MAC
 	LDFLAGS += $(MAC_SDK_FLAGS)
 endif
 ifdef ARCH_WIN
-	FLAGS += -DARCH_WIN
 	FLAGS += -D_USE_MATH_DEFINES
 	FLAGS += -municode
 	CXXFLAGS += -Wsuggest-override

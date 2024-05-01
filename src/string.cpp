@@ -1,3 +1,5 @@
+#include <arch.hpp>
+
 #include <ctime>
 #include <cctype> // for tolower and toupper
 #include <algorithm> // for transform and equal

@@ -1,3 +1,5 @@
+#include <arch.hpp>
+
 #include <thread>
 #include <map>
 #include <stdexcept>
@@ -99,7 +101,7 @@ static InitCallback loadPluginCallback(Plugin* plugin) {
 	libraryExt = "so";
 #elif defined ARCH_WIN
 	libraryExt = "dll";
-#elif ARCH_MAC
+#elif defined ARCH_MAC
 	libraryExt = "dylib";
 #endif
 

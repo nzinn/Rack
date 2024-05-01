@@ -1,3 +1,5 @@
+#include <arch.hpp>
+
 #include <thread>
 #include <regex>
 #include <chrono>
@@ -701,7 +703,7 @@ std::string getStackTrace() {
 			// If regex fails, just use the raw line
 			s += line;
 		}
-#elif ARCH_MAC
+#elif defined ARCH_MAC
 		// Parse line, e.g.
 		// 1   Rack                                0x0000000002ddc3eb _mangled_symbol + 27
 		std::regex r(R"((\d+)\s+(.+?)\s+(.+?) (.*?) \+ (.+?))");
