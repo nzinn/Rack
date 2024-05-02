@@ -23,7 +23,6 @@ CXXFLAGS += -std=c++11
 # Define compiler/linker target if cross-compiling
 ifdef CROSS_COMPILE
 	FLAGS += --target=$(MACHINE)
-	LDFLAGS += --target=$(MACHINE)
 endif
 
 # Architecture-independent flags
@@ -39,10 +38,8 @@ ifdef ARCH_LIN
 endif
 ifdef ARCH_MAC
 	CXXFLAGS += -stdlib=libc++
-	LDFLAGS += -stdlib=libc++
 	MAC_SDK_FLAGS := -mmacosx-version-min=10.9
 	FLAGS += $(MAC_SDK_FLAGS)
-	LDFLAGS += $(MAC_SDK_FLAGS)
 endif
 ifdef ARCH_WIN
 	FLAGS += -D_USE_MATH_DEFINES
@@ -69,7 +66,7 @@ DEPENDENCIES := $(patsubst %, build/%.d, $(SOURCES))
 # Final targets
 
 $(TARGET): $(OBJECTS)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 -include $(DEPENDENCIES)
 
