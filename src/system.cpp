@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <cxxabi.h> // for abi::__cxa_demangle
+#include <glob.h>
 
 #if defined ARCH_LIN || defined ARCH_MAC
 	#include <pthread.h>
@@ -85,6 +86,22 @@ std::vector<std::string> getEntries(const std::string& dirPath, int depth) {
 	std::vector<std::string> entries;
 	appendEntries(entries, fs::u8path(dirPath), depth);
 	return entries;
+}
+
+
+std::vector<std::string> glob(const std::string& pattern) {
+	glob_t glob_result;
+	memset(&glob_result, 0, sizeof(glob_result));
+	std::vector<std::string> paths;
+
+	if (!glob(pattern.c_str(), GLOB_BRACE, NULL, &glob_result)) {
+		for (size_t i = 0; i < glob_result.gl_pathc; i++) {
+			paths.push_back(std::string(glob_result.gl_pathv[i]));
+		}
+	}
+
+	globfree(&glob_result);
+	return paths;
 }
 
 

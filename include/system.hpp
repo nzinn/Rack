@@ -24,6 +24,10 @@ std::string join(const std::string& path1, const std::string& path2, Paths... pa
 `depth` is the number of directories to recurse. 0 depth does not recurse. -1 depth recurses infinitely.
 */
 std::vector<std::string> getEntries(const std::string& dirPath, int depth = 0);
+/** Expands a glob pattern such as `dir/file*.txt` to a list of paths.
+Paths are sorted.
+*/
+std::vector<std::string> glob(const std::string& pattern);
 bool exists(const std::string& path);
 /** Returns whether the given path is a file. */
 bool isFile(const std::string& path);
