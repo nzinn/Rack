@@ -284,12 +284,12 @@ void init() {
 
 	// If Fundamental wasn't loaded, copy the bundled Fundamental package and load it
 	if (!settings::devMode && !getPlugin("Fundamental")) {
-		std::string fundamentalSrc = asset::system("Fundamental.vcvplugin");
+		std::string fundamentalPackage = get(system::glob(asset::system("Fundamental-*-" + APP_OS + "-" + APP_CPU + ".vcvplugin")), 0);
 		std::string fundamentalDir = system::join(pluginsPath, "Fundamental");
-		if (system::isFile(fundamentalSrc)) {
+		if (fundamentalPackage != "" && system::isFile(fundamentalPackage)) {
 			INFO("Extracting bundled Fundamental package");
 			try {
-				system::unarchiveToDirectory(fundamentalSrc.c_str(), pluginsPath.c_str());
+				system::unarchiveToDirectory(fundamentalPackage.c_str(), pluginsPath.c_str());
 				loadPlugin(fundamentalDir);
 			}
 			catch (Exception& e) {

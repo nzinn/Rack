@@ -181,7 +181,7 @@ ifdef ARCH_LIN
 	# Copy resources
 	cp -R $(DIST_RES) dist/"$(DIST_DIR)"/
 	cp $(DIST_HTML) dist/"$(DIST_DIR)"/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/Fundamental.vcvplugin
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
 	# Make ZIP
 	cd dist && zip -q -9 -r "$(DIST_NAME)".zip "$(DIST_DIR)"
 endif
@@ -204,7 +204,7 @@ ifdef ARCH_MAC
 	cp -R $(DIST_RES) dist/"$(DIST_BUNDLE)"/Contents/Resources/
 	cp $(DIST_HTML) dist/"$(DIST_BUNDLE)"/Contents/Resources/
 	cp -R icon.icns dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/Fundamental.vcvplugin
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
 	# Clean up and sign bundle
 	xattr -cr dist/"$(DIST_BUNDLE)"
 	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"
@@ -230,7 +230,7 @@ ifdef ARCH_WIN
 	cp /mingw64/bin/libwinpthread-1.dll dist/"$(DIST_DIR)"/
 	cp /mingw64/bin/libstdc++-6.dll dist/"$(DIST_DIR)"/
 	cp /mingw64/bin/libgcc_s_seh-1.dll dist/"$(DIST_DIR)"/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/Fundamental.vcvplugin
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
 	# Make NSIS installer
 	# pacman -S mingw-w64-x86_64-nsis
 	makensis -DVERSION_MAJOR="$(VERSION_MAJOR)" -DVERSION="$(VERSION)" "-XOutFile dist/$(DIST_NAME).exe" installer.nsi
