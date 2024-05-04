@@ -145,145 +145,14 @@ valgrind: $(STANDALONE_TARGET)
 clean:
 	rm -rfv build dist $(TARGET) $(STANDALONE_TARGET) *.a
 
-
-# For Windows resources
+# Windows resources
 build/%.res: %.rc
 ifdef ARCH_WIN
 	windres $^ -O coff -o $@
 endif
 
-DIST_RES := res cacert.pem Core.json template.vcv LICENSE-GPLv3.txt
-DIST_NAME := RackFree-$(VERSION)-$(ARCH_NAME)
-DIST_SDK_DIR := Rack-SDK
-DIST_SDK := Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
-ifdef ARCH_MAC
-	DIST_BUNDLE := VCV Rack $(VERSION_MAJOR) Free.app
-else
-	DIST_DIR := Rack$(VERSION_MAJOR)Free
-endif
-DIST_MD := $(wildcard *.md)
-DIST_HTML := $(patsubst %.md, build/%.html, $(DIST_MD))
 
-
-# Target not supported for public use
-dist: $(TARGET) $(STANDALONE_TARGET) $(DIST_HTML) | cleandist
-	mkdir -p dist
-	# Copy Rack to dist
-ifdef ARCH_LIN
-	mkdir -p dist/"$(DIST_DIR)"
-	cp $(TARGET) dist/"$(DIST_DIR)"/
-	cp $(STANDALONE_TARGET) dist/"$(DIST_DIR)"/
-	$(STRIP) -s dist/"$(DIST_DIR)"/$(TARGET)
-	$(STRIP) -s dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
-	# Manually check that no nonstandard shared libraries are linked
-	ldd dist/"$(DIST_DIR)"/$(TARGET)
-	ldd dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
-	# Copy resources
-	cp -R $(DIST_RES) dist/"$(DIST_DIR)"/
-	cp $(DIST_HTML) dist/"$(DIST_DIR)"/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
-	# Make ZIP
-	cd dist && zip -q -9 -r "$(DIST_NAME)".zip "$(DIST_DIR)"
-endif
-ifdef ARCH_MAC
-	mkdir -p dist/"$(DIST_BUNDLE)"
-	mkdir -p dist/"$(DIST_BUNDLE)"/Contents
-	mkdir -p dist/"$(DIST_BUNDLE)"/Contents/Resources
-	mkdir -p dist/"$(DIST_BUNDLE)"/Contents/MacOS
-	cp $(TARGET) dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	cp $(STANDALONE_TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/
-	$(STRIP) -S dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
-	$(STRIP) -S dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
-	install_name_tool -change $(TARGET) @executable_path/../Resources/$(TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
-	# Manually check that no nonstandard shared libraries are linked
-	otool -L dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
-	otool -L dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
-	# Copy resources
-	cp Info.plist dist/"$(DIST_BUNDLE)"/Contents/
-	$(SED) 's/{VERSION}/$(VERSION)/g' dist/"$(DIST_BUNDLE)"/Contents/Info.plist
-	cp -R $(DIST_RES) dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	cp $(DIST_HTML) dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	cp -R icon.icns dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
-	# Clean up and sign bundle
-	xattr -cr dist/"$(DIST_BUNDLE)"
-	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"
-	codesign --verify --deep --strict --verbose=2 dist/"$(DIST_BUNDLE)"
-	# Make standalone PKG
-	mkdir -p dist/Component
-	cp -R dist/"$(DIST_BUNDLE)" dist/Component/
-	pkgbuild --identifier com.vcvrack.rack --component-plist Component.plist --root dist/Component --install-location /Applications dist/Component.pkg
-	# Make PKG
-	productbuild --distribution Distribution.xml --package-path dist dist/"$(DIST_NAME)".pkg
-	productsign --sign "Developer ID Installer: Andrew Belt (V8SW9J626X)" dist/"$(DIST_NAME)".pkg dist/"$(DIST_NAME)"-signed.pkg
-	mv dist/"$(DIST_NAME)"-signed.pkg dist/"$(DIST_NAME)".pkg
-endif
-ifdef ARCH_WIN
-	mkdir -p dist/"$(DIST_DIR)"
-	cp $(TARGET) dist/"$(DIST_DIR)"/
-	cp $(STANDALONE_TARGET) dist/"$(DIST_DIR)"/
-	$(STRIP) -s dist/"$(DIST_DIR)"/$(TARGET)
-	$(STRIP) -s dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
-	# Copy resources
-	cp -R $(DIST_RES) dist/"$(DIST_DIR)"/
-	cp $(DIST_HTML) dist/"$(DIST_DIR)"/
-	cp /mingw64/bin/libwinpthread-1.dll dist/"$(DIST_DIR)"/
-	cp /mingw64/bin/libstdc++-6.dll dist/"$(DIST_DIR)"/
-	cp /mingw64/bin/libgcc_s_seh-1.dll dist/"$(DIST_DIR)"/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
-	# Make NSIS installer
-	# pacman -S mingw-w64-x86_64-nsis
-	makensis -DVERSION_MAJOR="$(VERSION_MAJOR)" -DVERSION="$(VERSION)" "-XOutFile dist/$(DIST_NAME).exe" installer.nsi
-endif
-
-	# Build Rack SDK
-	mkdir -p dist/"$(DIST_SDK_DIR)"
-	cp -R LICENSE* *.mk include helper.py dist/"$(DIST_SDK_DIR)"/
-	mkdir -p dist/"$(DIST_SDK_DIR)"/dep/
-	cp -R dep/include dist/"$(DIST_SDK_DIR)"/dep/
-ifdef ARCH_LIN
-	cp $(TARGET) dist/"$(DIST_SDK_DIR)"/
-	$(STRIP) -s dist/"$(DIST_SDK_DIR)"/$(TARGET)
-endif
-ifdef ARCH_MAC
-	cp $(TARGET) dist/"$(DIST_SDK_DIR)"/
-	$(STRIP) -S dist/"$(DIST_SDK_DIR)"/$(TARGET)
-endif
-ifdef ARCH_WIN
-	cp libRack.dll.a dist/"$(DIST_SDK_DIR)"/
-endif
-	cd dist && zip -q -9 -r "$(DIST_SDK)" "$(DIST_SDK_DIR)"
-
-
-install: dist
-ifdef ARCH_MAC
-	sudo installer -pkg dist/"$(DIST_NAME)".pkg -target /
-endif
-
-
-uninstall:
-ifdef ARCH_MAC
-	sudo rm -rf /Applications/"$(DIST_BUNDLE)"
-endif
-
-
-# Target not supported for public use
-notarize:
-ifdef ARCH_MAC
-	# Submit installer package to Apple
-	xcrun notarytool submit --keychain-profile "VCV" --wait dist/"$(DIST_NAME)".pkg
-	# Mark app as notarized
-	xcrun stapler staple dist/"$(DIST_NAME)".pkg
-	# Check notarization
-	stapler validate dist/"$(DIST_NAME)".pkg
-endif
-
-
-cleandist:
-	rm -rfv dist
-
-# Plugin helpers
-
+# Plugin helper
 plugins:
 ifdef CMD
 	for f in plugins/*; do (cd "$$f" && $(CMD)); done
@@ -292,7 +161,146 @@ else
 endif
 
 
-# Includes
+# The following targets are not supported for public use
+
+DIST_NAME := RackFree-$(VERSION)-$(ARCH_NAME)
+ifdef ARCH_MAC
+	DIST_BUNDLE := VCV\ Rack\ $(VERSION_MAJOR)\ Free.app
+	DIST_DIR := dist/$(DIST_BUNDLE)
+else
+	DIST_DIR := dist/Rack$(VERSION_MAJOR)Free
+endif
+DIST_MD := $(wildcard *.md)
+DIST_HTML := $(patsubst %.md, build/%.html, $(DIST_MD))
+DIST_RES := res cacert.pem Core.json template.vcv LICENSE-GPLv3.txt $(DIST_HTML)
+DIST_SDK_DIR := dist/Rack-SDK
+DIST_SDK := dist/Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
+
+
+dist: $(DIST_DIR)
+$(DIST_DIR): $(TARGET) $(STANDALONE_TARGET) $(DIST_HTML)
+	mkdir -p dist
+ifdef ARCH_LIN
+	mkdir -p $(DIST_DIR)
+	cp $(TARGET) $(DIST_DIR)/
+	cp $(STANDALONE_TARGET) $(DIST_DIR)/
+	$(STRIP) -s $(DIST_DIR)/$(TARGET)
+	$(STRIP) -s $(DIST_DIR)/$(STANDALONE_TARGET)
+	# Manually check that no nonstandard shared libraries are linked
+	ldd $(DIST_DIR)/$(TARGET)
+	ldd $(DIST_DIR)/$(STANDALONE_TARGET)
+	# Copy resources
+	cp -R $(DIST_RES) $(DIST_DIR)/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/
+endif
+ifdef ARCH_MAC
+	mkdir -p $(DIST_DIR)
+	mkdir -p $(DIST_DIR)/Contents
+	mkdir -p $(DIST_DIR)/Contents/Resources
+	mkdir -p $(DIST_DIR)/Contents/MacOS
+	cp $(TARGET) $(DIST_DIR)/Contents/Resources/
+	cp $(STANDALONE_TARGET) $(DIST_DIR)/Contents/MacOS/
+	$(STRIP) -S $(DIST_DIR)/Contents/Resources/$(TARGET)
+	$(STRIP) -S $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	install_name_tool -change $(TARGET) @executable_path/../Resources/$(TARGET) $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	# Manually check that no nonstandard shared libraries are linked
+	otool -L $(DIST_DIR)/Contents/Resources/$(TARGET)
+	otool -L $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	# Copy resources
+	cp Info.plist $(DIST_DIR)/Contents/
+	$(SED) 's/{VERSION}/$(VERSION)/g' $(DIST_DIR)/Contents/Info.plist
+	cp -R icon.icns $(DIST_DIR)/Contents/Resources/
+	cp -R $(DIST_RES) $(DIST_DIR)/Contents/Resources/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/Contents/Resources/
+endif
+ifdef ARCH_WIN
+	mkdir -p $(DIST_DIR)
+	cp $(TARGET) $(DIST_DIR)/
+	cp $(STANDALONE_TARGET) $(DIST_DIR)/
+	$(STRIP) -s $(DIST_DIR)/$(TARGET)
+	$(STRIP) -s $(DIST_DIR)/$(STANDALONE_TARGET)
+	# Copy resources
+	cp -R $(DIST_RES) $(DIST_DIR)/
+	cp /mingw64/bin/libwinpthread-1.dll $(DIST_DIR)/
+	cp /mingw64/bin/libstdc++-6.dll $(DIST_DIR)/
+	cp /mingw64/bin/libgcc_s_seh-1.dll $(DIST_DIR)/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/
+endif
+
+
+sdk: $(DIST_SDK_DIR)
+$(DIST_SDK_DIR): $(DIST_HTML)
+	mkdir -p $(DIST_SDK_DIR)
+	cp -R include *.mk helper.py $(DIST_HTML) $(DIST_SDK_DIR)/
+	mkdir -p $(DIST_SDK_DIR)/dep
+	cp -R dep/include $(DIST_SDK_DIR)/dep/
+ifdef ARCH_LIN
+	cp $(TARGET) $(DIST_SDK_DIR)/
+	$(STRIP) -s $(DIST_SDK_DIR)/$(TARGET)
+endif
+ifdef ARCH_MAC
+	cp $(TARGET) $(DIST_SDK_DIR)/
+	$(STRIP) -S $(DIST_SDK_DIR)/$(TARGET)
+endif
+ifdef ARCH_WIN
+	cp $(TARGET).a $(DIST_SDK_DIR)/
+endif
+
+
+package: $(DIST_DIR) $(DIST_SDK_DIR)
+ifdef ARCH_LIN
+	# Make ZIP
+	cd dist && zip -q -9 -r ../$(DIST_NAME).zip $(notdir $(DIST_DIR))
+endif
+ifdef ARCH_MAC
+	# Clean up and sign bundle
+	xattr -cr $(DIST_DIR)
+	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep $(DIST_DIR)/Contents/Resources/$(TARGET) $(DIST_DIR)
+	codesign --verify --deep --strict --verbose=2 $(DIST_DIR)
+	# Make standalone PKG
+	mkdir -p dist/Component
+	cp -R $(DIST_DIR) dist/Component/
+	pkgbuild --identifier com.vcvrack.rack --component-plist Component.plist --root dist/Component --install-location /Applications dist/Component.pkg
+	# Make PKG
+	productbuild --distribution Distribution.xml --package-path dist dist/$(DIST_NAME).pkg
+	productsign --sign "Developer ID Installer: Andrew Belt (V8SW9J626X)" dist/$(DIST_NAME).pkg dist/$(DIST_NAME)-signed.pkg
+	mv dist/$(DIST_NAME)-signed.pkg dist/$(DIST_NAME).pkg
+endif
+ifdef ARCH_WIN
+	# Make NSIS installer
+	# pacman -S mingw-w64-x86_64-nsis
+	makensis -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION=$(VERSION) "-XOutFile dist/$(DIST_NAME).exe" installer.nsi
+endif
+	# SDK
+	cd dist && zip -q -9 -r ../$(DIST_SDK) $(notdir $(DIST_SDK_DIR))
+
+
+notarize:
+ifdef ARCH_MAC
+	# Submit installer package to Apple
+	xcrun notarytool submit --keychain-profile "VCV" --wait dist/$(DIST_NAME).pkg
+	# Mark app as notarized
+	xcrun stapler staple dist/$(DIST_NAME).pkg
+	# Check notarization
+	stapler validate dist/$(DIST_NAME).pkg
+endif
+
+
+install: dist
+ifdef ARCH_MAC
+	sudo installer -pkg dist/$(DIST_NAME).pkg -target /
+endif
+
+
+uninstall:
+ifdef ARCH_MAC
+	sudo rm -rf /Applications/$(DIST_BUNDLE)
+endif
+
+
+cleandist:
+	rm -rfv dist
+
 
 .DEFAULT_GOAL := all
 .PHONY: all dep run debug clean dist upload src plugins
