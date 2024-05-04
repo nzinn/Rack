@@ -163,7 +163,7 @@ endif
 
 # The following targets are not supported for public use
 
-DIST_NAME := RackFree-$(VERSION)-$(ARCH_NAME)
+DIST_NAME = RackFree-$(VERSION)-$(ARCH_NAME)
 ifdef ARCH_MAC
 	DIST_BUNDLE := VCV\ Rack\ $(VERSION_MAJOR)\ Free.app
 	DIST_DIR := dist/$(DIST_BUNDLE)
@@ -174,7 +174,7 @@ DIST_MD := $(wildcard *.md)
 DIST_HTML := $(patsubst %.md, build/%.html, $(DIST_MD))
 DIST_RES := res cacert.pem Core.json template.vcv LICENSE-GPLv3.txt $(DIST_HTML)
 DIST_SDK_DIR := dist/Rack-SDK
-DIST_SDK := dist/Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
+DIST_SDK = dist/Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
 
 
 dist: $(DIST_DIR)
@@ -273,6 +273,18 @@ ifdef ARCH_WIN
 endif
 	# SDK
 	cd dist && zip -q -9 -r ../$(DIST_SDK) $(notdir $(DIST_SDK_DIR))
+
+
+lipo: $(DIST_DIR) $(DIST_SDK_DIR)
+ifndef OTHER_RACK_DIR
+	$(error OTHER_RACK_DIR not defined)
+endif
+ifdef ARCH_MAC
+	lipo -create -output $(DIST_DIR)/Contents/Resources/$(TARGET) $(DIST_DIR)/Contents/Resources/$(TARGET) $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/Resources/$(TARGET)
+	lipo -create -output $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET) $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET) $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	lipo -create -output $(DIST_SDK_DIR)/$(TARGET) $(DIST_SDK_DIR)/$(TARGET) $(OTHER_RACK_DIR)/$(DIST_SDK_DIR)/$(TARGET)
+	cp $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/Resources/Fundamental-*.vcvplugin $(DIST_DIR)/Contents/Resources/
+endif
 
 
 notarize:
