@@ -281,7 +281,7 @@ ifdef ARCH_MAC
 	# App bundle
 	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
 	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
-	lipo -create -output $(DIST_SDK_DIR)/$(TARGET) $(DIST_SDK_DIR)/$(TARGET) $(OTHER_RACK_DIR)/$(DIST_SDK_DIR)/$(TARGET)
+	lipo -create -output dist/$(DIST_SDK_DIR)/$(TARGET) dist/$(DIST_SDK_DIR)/$(TARGET) $(OTHER_RACK_DIR)/dist/$(DIST_SDK_DIR)/$(TARGET)
 	# Fundamental package
 	cp $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
 endif
