@@ -1,4 +1,5 @@
 RACK_DIR ?= .
+EDITION := Free
 VERSION_MAJOR := 2
 VERSION := $(shell jq -r .version Core.json)
 
@@ -163,103 +164,100 @@ endif
 
 # The following targets are not supported for public use
 
-DIST_NAME = RackFree-$(VERSION)-$(ARCH_NAME)
+DIST_NAME = Rack$(EDITION)-$(VERSION)-$(ARCH_NAME)
 ifdef ARCH_MAC
-	DIST_BUNDLE := VCV\ Rack\ $(VERSION_MAJOR)\ Free.app
-	DIST_DIR := dist/$(DIST_BUNDLE)
+	DIST_BUNDLE := VCV Rack $(VERSION_MAJOR) $(EDITION).app
 else
-	DIST_DIR := dist/Rack$(VERSION_MAJOR)Free
+	DIST_DIR := Rack$(VERSION_MAJOR)$(EDITION)
 endif
 DIST_MD := $(wildcard *.md)
 DIST_HTML := $(patsubst %.md, build/%.html, $(DIST_MD))
 DIST_RES := res cacert.pem Core.json template.vcv LICENSE-GPLv3.txt $(DIST_HTML)
-DIST_SDK_DIR := dist/Rack-SDK
-DIST_SDK = dist/Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
+DIST_SDK_DIR := Rack-SDK
+DIST_SDK = Rack-SDK-$(VERSION)-$(ARCH_NAME).zip
 
 
-dist: $(DIST_DIR)
-$(DIST_DIR): $(TARGET) $(STANDALONE_TARGET) $(DIST_HTML)
+dist: $(TARGET) $(STANDALONE_TARGET) $(DIST_HTML)
 	mkdir -p dist
 ifdef ARCH_LIN
-	mkdir -p $(DIST_DIR)
-	cp $(TARGET) $(DIST_DIR)/
-	cp $(STANDALONE_TARGET) $(DIST_DIR)/
-	$(STRIP) -s $(DIST_DIR)/$(TARGET)
-	$(STRIP) -s $(DIST_DIR)/$(STANDALONE_TARGET)
+	mkdir -p dist/"$(DIST_DIR)"
+	cp $(TARGET) dist/"$(DIST_DIR)"/
+	cp $(STANDALONE_TARGET) dist/"$(DIST_DIR)"/
+	$(STRIP) -s dist/"$(DIST_DIR)"/$(TARGET)
+	$(STRIP) -s dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
 	# Manually check that no nonstandard shared libraries are linked
-	ldd $(DIST_DIR)/$(TARGET)
-	ldd $(DIST_DIR)/$(STANDALONE_TARGET)
+	ldd dist/"$(DIST_DIR)"/$(TARGET)
+	ldd dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
 	# Copy resources
-	cp -R $(DIST_RES) $(DIST_DIR)/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/
+	cp -R $(DIST_RES) dist/"$(DIST_DIR)"/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
 endif
 ifdef ARCH_MAC
-	mkdir -p $(DIST_DIR)
-	mkdir -p $(DIST_DIR)/Contents
-	mkdir -p $(DIST_DIR)/Contents/Resources
-	mkdir -p $(DIST_DIR)/Contents/MacOS
-	cp $(TARGET) $(DIST_DIR)/Contents/Resources/
-	cp $(STANDALONE_TARGET) $(DIST_DIR)/Contents/MacOS/
-	$(STRIP) -S $(DIST_DIR)/Contents/Resources/$(TARGET)
-	$(STRIP) -S $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
-	install_name_tool -change $(TARGET) @executable_path/../Resources/$(TARGET) $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	mkdir -p dist/"$(DIST_BUNDLE)"
+	mkdir -p dist/"$(DIST_BUNDLE)"/Contents
+	mkdir -p dist/"$(DIST_BUNDLE)"/Contents/Resources
+	mkdir -p dist/"$(DIST_BUNDLE)"/Contents/MacOS
+	cp $(TARGET) dist/"$(DIST_BUNDLE)"/Contents/Resources/
+	cp $(STANDALONE_TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/
+	$(STRIP) -S dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
+	$(STRIP) -S dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
+	install_name_tool -change $(TARGET) @executable_path/../Resources/$(TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
 	# Manually check that no nonstandard shared libraries are linked
-	otool -L $(DIST_DIR)/Contents/Resources/$(TARGET)
-	otool -L $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	otool -L dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
+	otool -L dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
 	# Copy resources
-	cp Info.plist $(DIST_DIR)/Contents/
-	$(SED) 's/{VERSION}/$(VERSION)/g' $(DIST_DIR)/Contents/Info.plist
-	cp -R icon.icns $(DIST_DIR)/Contents/Resources/
-	cp -R $(DIST_RES) $(DIST_DIR)/Contents/Resources/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/Contents/Resources/
+	cp Info.plist dist/"$(DIST_BUNDLE)"/Contents/
+	$(SED) 's/{VERSION}/$(VERSION)/g' dist/"$(DIST_BUNDLE)"/Contents/Info.plist
+	cp -R icon.icns dist/"$(DIST_BUNDLE)"/Contents/Resources/
+	cp -R $(DIST_RES) dist/"$(DIST_BUNDLE)"/Contents/Resources/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
 endif
 ifdef ARCH_WIN
-	mkdir -p $(DIST_DIR)
-	cp $(TARGET) $(DIST_DIR)/
-	cp $(STANDALONE_TARGET) $(DIST_DIR)/
-	$(STRIP) -s $(DIST_DIR)/$(TARGET)
-	$(STRIP) -s $(DIST_DIR)/$(STANDALONE_TARGET)
+	mkdir -p dist/"$(DIST_DIR)"
+	cp $(TARGET) dist/"$(DIST_DIR)"/
+	cp $(STANDALONE_TARGET) dist/"$(DIST_DIR)"/
+	$(STRIP) -s dist/"$(DIST_DIR)"/$(TARGET)
+	$(STRIP) -s dist/"$(DIST_DIR)"/$(STANDALONE_TARGET)
 	# Copy resources
-	cp -R $(DIST_RES) $(DIST_DIR)/
-	cp /mingw64/bin/libwinpthread-1.dll $(DIST_DIR)/
-	cp /mingw64/bin/libstdc++-6.dll $(DIST_DIR)/
-	cp /mingw64/bin/libgcc_s_seh-1.dll $(DIST_DIR)/
-	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin $(DIST_DIR)/
+	cp -R $(DIST_RES) dist/"$(DIST_DIR)"/
+	cp /mingw64/bin/libwinpthread-1.dll dist/"$(DIST_DIR)"/
+	cp /mingw64/bin/libstdc++-6.dll dist/"$(DIST_DIR)"/
+	cp /mingw64/bin/libgcc_s_seh-1.dll dist/"$(DIST_DIR)"/
+	cp plugins/Fundamental/dist/Fundamental-*.vcvplugin dist/"$(DIST_DIR)"/
 endif
 
 
-sdk: $(DIST_SDK_DIR)
-$(DIST_SDK_DIR): $(DIST_HTML)
-	mkdir -p $(DIST_SDK_DIR)
-	cp -R include *.mk helper.py $(DIST_HTML) $(DIST_SDK_DIR)/
-	mkdir -p $(DIST_SDK_DIR)/dep
-	cp -R dep/include $(DIST_SDK_DIR)/dep/
+sdk: $(DIST_HTML)
+	mkdir -p dist/$(DIST_SDK_DIR)
+	cp -R include *.mk helper.py $(DIST_HTML) dist/$(DIST_SDK_DIR)/
+	mkdir -p dist/$(DIST_SDK_DIR)/dep
+	cp -R dep/include dist/$(DIST_SDK_DIR)/dep/
 ifdef ARCH_LIN
-	cp $(TARGET) $(DIST_SDK_DIR)/
-	$(STRIP) -s $(DIST_SDK_DIR)/$(TARGET)
+	cp $(TARGET) dist/$(DIST_SDK_DIR)/
+	$(STRIP) -s dist/$(DIST_SDK_DIR)/$(TARGET)
 endif
 ifdef ARCH_MAC
-	cp $(TARGET) $(DIST_SDK_DIR)/
-	$(STRIP) -S $(DIST_SDK_DIR)/$(TARGET)
+	cp $(TARGET) dist/$(DIST_SDK_DIR)/
+	$(STRIP) -S dist/$(DIST_SDK_DIR)/$(TARGET)
 endif
 ifdef ARCH_WIN
-	cp $(TARGET).a $(DIST_SDK_DIR)/
+	cp $(TARGET).a dist/$(DIST_SDK_DIR)/
 endif
 
 
-package: $(DIST_DIR) $(DIST_SDK_DIR)
+package:
 ifdef ARCH_LIN
 	# Make ZIP
-	cd dist && zip -q -9 -r ../$(DIST_NAME).zip $(notdir $(DIST_DIR))
+	cd dist && zip -q -9 -r $(DIST_NAME).zip "$(DIST_DIR)"
 endif
 ifdef ARCH_MAC
 	# Clean up and sign bundle
-	xattr -cr $(DIST_DIR)
-	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep $(DIST_DIR)/Contents/Resources/$(TARGET) $(DIST_DIR)
-	codesign --verify --deep --strict --verbose=2 $(DIST_DIR)
+	xattr -cr dist/"$(DIST_BUNDLE)"
+	codesign --verbose --sign "Developer ID Application: Andrew Belt (V8SW9J626X)" --options runtime --entitlements Entitlements.plist --timestamp --deep dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"
+	codesign --verify --deep --strict --verbose=2 dist/"$(DIST_BUNDLE)"
 	# Make standalone PKG
 	mkdir -p dist/Component
-	cp -R $(DIST_DIR) dist/Component/
+	cp -R dist/"$(DIST_BUNDLE)" dist/Component/
 	pkgbuild --identifier com.vcvrack.rack --component-plist Component.plist --root dist/Component --install-location /Applications dist/Component.pkg
 	# Make PKG
 	productbuild --distribution Distribution.xml --package-path dist dist/$(DIST_NAME).pkg
@@ -272,18 +270,20 @@ ifdef ARCH_WIN
 	makensis -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION=$(VERSION) "-XOutFile dist/$(DIST_NAME).exe" installer.nsi
 endif
 	# SDK
-	cd dist && zip -q -9 -r ../$(DIST_SDK) $(notdir $(DIST_SDK_DIR))
+	cd dist && zip -q -9 -r $(DIST_SDK) $(DIST_SDK_DIR)
 
 
-lipo: $(DIST_DIR) $(DIST_SDK_DIR)
+lipo:
 ifndef OTHER_RACK_DIR
 	$(error OTHER_RACK_DIR not defined)
 endif
 ifdef ARCH_MAC
-	lipo -create -output $(DIST_DIR)/Contents/Resources/$(TARGET) $(DIST_DIR)/Contents/Resources/$(TARGET) $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/Resources/$(TARGET)
-	lipo -create -output $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET) $(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET) $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/MacOS/$(STANDALONE_TARGET)
+	# App bundle
+	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
+	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
 	lipo -create -output $(DIST_SDK_DIR)/$(TARGET) $(DIST_SDK_DIR)/$(TARGET) $(OTHER_RACK_DIR)/$(DIST_SDK_DIR)/$(TARGET)
-	cp $(OTHER_RACK_DIR)/$(DIST_DIR)/Contents/Resources/Fundamental-*.vcvplugin $(DIST_DIR)/Contents/Resources/
+	# Fundamental package
+	cp $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
 endif
 
 
@@ -298,7 +298,7 @@ ifdef ARCH_MAC
 endif
 
 
-install: dist
+install: uninstall
 ifdef ARCH_MAC
 	sudo installer -pkg dist/$(DIST_NAME).pkg -target /
 endif
@@ -306,7 +306,7 @@ endif
 
 uninstall:
 ifdef ARCH_MAC
-	sudo rm -rf /Applications/$(DIST_BUNDLE)
+	sudo rm -rf /Applications/"$(DIST_BUNDLE)"
 endif
 
 
@@ -315,4 +315,4 @@ cleandist:
 
 
 .DEFAULT_GOAL := all
-.PHONY: all dep run debug clean dist upload src plugins
+.PHONY: all dep run debug clean plugins dist sdk package lipo notarize
