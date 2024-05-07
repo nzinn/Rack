@@ -4,6 +4,7 @@
 #include <map>
 #include <stdexcept>
 #include <tuple>
+#include <regex>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -244,6 +245,15 @@ static void extractPackages(std::string path) {
 	}
 }
 
+static std::string getFundamentalPackagePath() {
+	std::regex r("Fundamental-.*-" + APP_OS + "-" + APP_CPU + "\\.vcvplugin");
+	for (const std::string& path : system::getEntries(asset::systemDir)) {
+		if (std::regex_match(system::getFilename(path), r))
+			return path;
+	}
+	return "";
+}
+
 ////////////////////
 // public API
 ////////////////////
@@ -284,7 +294,7 @@ void init() {
 
 	// If Fundamental wasn't loaded, copy the bundled Fundamental package and load it
 	if (!settings::devMode && !getPlugin("Fundamental")) {
-		std::string fundamentalPackage = get(system::glob(asset::system("Fundamental-*-" + APP_OS + "-" + APP_CPU + ".vcvplugin")), 0);
+		std::string fundamentalPackage = getFundamentalPackagePath();
 		std::string fundamentalDir = system::join(pluginsPath, "Fundamental");
 		if (fundamentalPackage != "" && system::isFile(fundamentalPackage)) {
 			INFO("Extracting bundled Fundamental package");
