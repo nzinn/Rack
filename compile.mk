@@ -66,7 +66,7 @@ DEPENDENCIES := $(patsubst %, build/%.d, $(SOURCES))
 # Final targets
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 -include $(DEPENDENCIES)
 
