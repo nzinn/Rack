@@ -32,7 +32,7 @@ struct MenuItem : MenuEntry {
 
 
 struct ColorDotMenuItem : MenuItem {
-	NVGcolor color;
+	NVGcolor color = color::BLACK_TRANSPARENT;
 
 	void draw(const DrawArgs& args) override;
 	void step() override;

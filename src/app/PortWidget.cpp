@@ -150,7 +150,27 @@ struct PortCableItem : ui::ColorDotMenuItem {
 };
 
 
-struct PortCreateCableItem : ui::ColorDotMenuItem {
+struct PortCreateCableItem : ui::MenuItem {
+	PortWidget* pw;
+
+	void onButton(const ButtonEvent& e) override {
+		OpaqueWidget::onButton(e);
+		if (disabled)
+			return;
+		if (e.action == GLFW_PRESS && e.button == GLFW_MOUSE_BUTTON_LEFT && (e.mods & RACK_MOD_MASK) == 0) {
+			// Set PortWidget::onDragStart overrides
+			pw->internal->overrideCreateCable = true;
+
+			// Pretend the PortWidget was clicked
+			e.consume(pw);
+			// Deletes `this`
+			doAction();
+		}
+	}
+};
+
+
+struct PortCreateCableColorItem : ui::ColorDotMenuItem {
 	PortWidget* pw;
 	size_t colorId;
 
@@ -251,10 +271,16 @@ void PortWidget::createContextMenu() {
 	));
 
 	{
-		PortCloneCableItem* item = createMenuItem<PortCloneCableItem>("Duplicate top cable", RACK_MOD_CTRL_NAME "+drag");
+		PortCloneCableItem* item = createMenuItem<PortCloneCableItem>("Duplicate top cable", RACK_MOD_CTRL_NAME "+Shift+drag");
 		item->disabled = !topCw;
 		item->pw = this;
 		item->cw = topCw;
+		menu->addChild(item);
+	}
+
+	{
+		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>("Create cable on top", RACK_MOD_CTRL_NAME "+drag");
+		item->pw = this;
 		menu->addChild(item);
 	}
 
@@ -265,8 +291,8 @@ void PortWidget::createContextMenu() {
 		NVGcolor color = settings::cableColors[colorId];
 		std::string label = get(settings::cableLabels, colorId);
 		if (label == "")
-			label = string::f("Color #%lld", (long long) (colorId + 1));
-		PortCreateCableItem* item = createMenuItem<PortCreateCableItem>(label, "Click+drag");
+			label = string::f("#%lld", (long long) (colorId + 1));
+		PortCreateCableColorItem* item = createMenuItem<PortCreateCableColorItem>("Create cable: " + label);
 		item->pw = this;
 		item->color = color;
 		item->colorId = colorId;
