@@ -174,6 +174,7 @@ struct EngineWorker {
 
 struct Engine::Internal {
 	std::vector<Module*> modules;
+	/** Sorted by (inputModule, inputId) tuple */
 	std::vector<Cable*> cables;
 	std::set<ParamHandle*> paramHandles;
 	Module* masterModule = NULL;
@@ -184,10 +185,6 @@ struct Engine::Internal {
 	std::map<int64_t, Cable*> cablesCache;
 	// (moduleId, paramId)
 	std::map<std::tuple<int64_t, int>, ParamHandle*> paramHandlesCache;
-	/** Cache of cables connected to each input
-	Only connected inputs are allowed.
-	*/
-	std::map<Input*, std::vector<Cable*>> inputCablesCache;
 
 	float sampleRate = 0.f;
 	float sampleTime = 0.f;
@@ -318,6 +315,80 @@ static void Engine_stepWorker(Engine* that, int threadId) {
 }
 
 
+static void Engine_stepFrameCables(Engine* that) {
+	auto finitize = [](float x) {
+		return std::isfinite(x) ? x : 0.f;
+	};
+
+	// Iterate each cable input group, since `cables` is sorted by input
+	auto firstIt = that->internal->cables.begin();
+	while (firstIt != that->internal->cables.end()) {
+		Cable* firstCable = *firstIt;
+		Input* input = &firstCable->inputModule->inputs[firstCable->inputId];
+
+		// Find end of input group
+		auto endIt = firstIt;
+		while (++endIt != that->internal->cables.end()) {
+			Cable* endCable = *endIt;
+			// Check inputId first since it changes more frequently between cables
+			if (!(endCable->inputId == firstCable->inputId && endCable->inputModule == firstCable->inputModule))
+				break;
+		}
+
+		// Since stackable inputs are uncommon, only use stackable input logic if there are multiple cables in input group.
+		if (endIt - firstIt == 1) {
+			Output* output = &firstCable->outputModule->outputs[firstCable->outputId];
+			// Copy all voltages from output to input
+			for (uint8_t c = 0; c < output->channels; c++) {
+				input->voltages[c] = finitize(output->voltages[c]);
+			}
+			// Set higher channel voltages to 0
+			for (uint8_t c = output->channels; c < input->channels; c++) {
+				input->voltages[c] = 0.f;
+			}
+			input->channels = output->channels;
+		}
+		else {
+			// Calculate max output channels
+			uint8_t channels = 0;
+			for (auto it = firstIt; it < endIt; ++it) {
+				Cable* cable = *it;
+				Output* output = &cable->outputModule->outputs[cable->outputId];
+				channels = std::max(channels, output->channels);
+			}
+
+			// Clear input channels, including old channels
+			for (uint8_t c = 0; c < std::max(channels, input->channels); c++) {
+				input->voltages[c] = 0.f;
+			}
+			input->channels = channels;
+
+			// Sum outputs of cables
+			for (auto it = firstIt; it < endIt; ++it) {
+				Cable* cable = *it;
+				Output* output = &cable->outputModule->outputs[cable->outputId];
+
+				// Sum monophonic value to all input channels
+				if (output->channels == 1) {
+					float value = finitize(output->voltages[0]);
+					for (uint8_t c = 0; c < channels; c++) {
+						input->voltages[c] += value;
+					}
+				}
+				// Sum polyphonic values to each input channel
+				else {
+					for (uint8_t c = 0; c < output->channels; c++) {
+						input->voltages[c] += finitize(output->voltages[c]);
+					}
+				}
+			}
+		}
+
+		firstIt = endIt;
+	}
+}
+
+
 /** Steps a single frame
 */
 static void Engine_stepFrame(Engine* that) {
@@ -350,44 +421,7 @@ static void Engine_stepFrame(Engine* that) {
 	Engine_stepWorker(that, 0);
 	internal->workerBarrier.wait();
 
-	// Step cables for each input
-	for (const auto& pair : internal->inputCablesCache) {
-		Input* input = pair.first;
-		const std::vector<Cable*>& cables = pair.second;
-		// Clear input voltages up to old number of input channels
-		for (int c = 0; c < input->channels; c++) {
-			input->voltages[c] = 0.f;
-		}
-		// Find max number of channels
-		uint8_t channels = 1;
-		for (Cable* cable : cables) {
-			Output* output = &cable->outputModule->outputs[cable->outputId];
-			channels = std::max(channels, output->channels);
-		}
-		input->channels = channels;
-		// Sum all outputs to input value
-		for (Cable* cable : cables) {
-			Output* output = &cable->outputModule->outputs[cable->outputId];
-
-			auto finitize = [](float x) {
-				return std::isfinite(x) ? x : 0.f;
-			};
-
-			// Sum monophonic value to all input channels
-			if (output->channels == 1) {
-				float value = finitize(output->voltages[0]);
-				for (int c = 0; c < channels; c++) {
-					input->voltages[c] += value;
-				}
-			}
-			// Sum polyphonic values to each input channel
-			else {
-				for (int c = 0; c < output->channels; c++) {
-					input->voltages[c] += finitize(output->voltages[c]);
-				}
-			}
-		}
-	}
+	Engine_stepFrameCables(that);
 
 	// Flip messages for each module
 	for (Module* module : that->internal->modules) {
@@ -937,6 +971,10 @@ void Engine::addCable_NoLock(Cable* cable) {
 	}
 	// Add the cable
 	internal->cables.push_back(cable);
+	// Sort cable by input so they are grouped in stepFrame()
+	std::sort(internal->cables.begin(), internal->cables.end(), [](Cable* a, Cable* b) {
+		return std::make_tuple(a->inputModule, a->inputId) < std::make_tuple(b->inputModule, b->inputId);
+	});
 	// Set default number of input/output channels
 	if (!inputWasConnected) {
 		input.channels = 1;
@@ -946,7 +984,6 @@ void Engine::addCable_NoLock(Cable* cable) {
 	}
 	// Add caches
 	internal->cablesCache[cable->id] = cable;
-	internal->inputCablesCache[&input].push_back(cable);
 	// Dispatch input port event
 	if (!inputWasConnected) {
 		Module::PortChangeEvent e;
@@ -980,16 +1017,6 @@ void Engine::removeCable_NoLock(Cable* cable) {
 	auto it = std::find(internal->cables.begin(), internal->cables.end(), cable);
 	assert(it != internal->cables.end());
 	// Remove cable caches
-	{
-		auto& v = internal->inputCablesCache[&input];
-		auto it = std::find(v.begin(), v.end(), cable);
-		assert(it != v.end());
-		v.erase(it);
-		// Remove input from cache if no cables are connected
-		if (v.empty()) {
-			internal->inputCablesCache.erase(&input);
-		}
-	}
 	internal->cablesCache.erase(cable->id);
 	// Remove cable
 	internal->cables.erase(it);
