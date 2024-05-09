@@ -2,8 +2,14 @@
 
 In this document, Ctrl means Cmd on Mac.
 
-### 2.5.2 (in development)
+### 2.5.2 (2024-05-09)
 - Add configurable cable color labels.
+- When duplicating module with cables, duplicate cables connected to outputs as well as inputs.
+- Allow building multi-arch x64+arm64 "Universal" Mac binary.
+- Optimize engine's cable stepping algorithm to be as CPU-efficient as non-stackable inputs.
+- Limit log file size to 10 MB.
+- API
+	- Define `ARCH_*` macros in `arch.hpp` header (included in `rack.hpp`) instead of in compiler flags.
 
 ### 2.5.1 (2024-04-16)
 - Remember the last selected cable color from the port's "New cable" menu item. When "Auto-rotate cables" is enabled, the next color in the rotation is used.
