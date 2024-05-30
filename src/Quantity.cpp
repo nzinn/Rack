@@ -93,6 +93,13 @@ static void teVarsInit() {
 	teVars.push_back({"ftov", (void*) (double(*)(double)) [](double x) -> double {
 		return std::log2(x / dsp::FREQ_C4);
 	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+
+	teVars.push_back({"vtobpm", (void*) (double(*)(double)) [](double x) -> double {
+		return std::pow(2, x) * 120.f;
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
+	teVars.push_back({"bpmtov", (void*) (double(*)(double)) [](double x) -> double {
+		return std::log2(x / 120.f);
+	}, TE_FUNCTION1 | TE_FLAG_PURE, NULL});
 }
 
 void Quantity::setDisplayValueString(std::string s) {
