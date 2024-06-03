@@ -243,6 +243,8 @@ endif
 ifdef ARCH_WIN
 	cp $(TARGET).a dist/$(DIST_SDK_DIR)/
 endif
+	# SDK
+	cd dist && zip -q -9 -r $(DIST_SDK) $(DIST_SDK_DIR)
 
 
 package:
@@ -269,8 +271,6 @@ ifdef ARCH_WIN
 	# pacman -S mingw-w64-x86_64-nsis
 	makensis -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION=$(VERSION) "-XOutFile dist/$(DIST_NAME).exe" installer.nsi
 endif
-	# SDK
-	cd dist && zip -q -9 -r $(DIST_SDK) $(DIST_SDK_DIR)
 
 
 lipo:
@@ -281,7 +281,6 @@ ifdef ARCH_MAC
 	# App bundle
 	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/$(TARGET)
 	lipo -create -output dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET) $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/MacOS/$(STANDALONE_TARGET)
-	lipo -create -output dist/$(DIST_SDK_DIR)/$(TARGET) dist/$(DIST_SDK_DIR)/$(TARGET) $(OTHER_RACK_DIR)/dist/$(DIST_SDK_DIR)/$(TARGET)
 	# Fundamental package
 	cp $(OTHER_RACK_DIR)/dist/"$(DIST_BUNDLE)"/Contents/Resources/Fundamental-*.vcvplugin dist/"$(DIST_BUNDLE)"/Contents/Resources/
 endif
