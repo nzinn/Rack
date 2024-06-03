@@ -92,6 +92,7 @@ static ModuleWidget* chooseModel(plugin::Model* model) {
 	INFO("Creating module widget %s", model->getFullName().c_str());
 	ModuleWidget* moduleWidget = model->createModuleWidget(module);
 
+	APP->scene->rack->deselectAll();
 	APP->scene->rack->updateModuleOldPositions();
 	APP->scene->rack->addModuleAtMouse(moduleWidget);
 	h->push(APP->scene->rack->getModuleDragAction());
