@@ -399,8 +399,13 @@ struct MIDI_CV : Module {
 		// Set last note if monophonic
 		if (channels == 1) {
 			if (!heldNotes.empty()) {
+				// Replace note with last held note
 				uint8_t lastNote = heldNotes.back();
 				notes[0] = lastNote;
+			}
+			else {
+				// Disable gate
+				gates[0] = false;
 			}
 		}
 		// Clear notes that are not held if polyphonic
@@ -408,7 +413,9 @@ struct MIDI_CV : Module {
 			for (int c = 0; c < channels; c++) {
 				if (!gates[c])
 					continue;
+				// Disable all gates
 				gates[c] = false;
+				// Re-enable gate if channel's note is still held
 				for (uint8_t note : heldNotes) {
 					if (notes[c] == note) {
 						gates[c] = true;
