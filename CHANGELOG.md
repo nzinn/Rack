@@ -4,7 +4,7 @@ In this document, Ctrl means Cmd on Mac.
 
 ### 2.5.2 (2024-05-09)
 - Add configurable cable color labels.
-- When duplicating module with cables, duplicate cables connected to outputs as well as inputs.
+- When duplicating module with cables, duplicate cables connected to module's outputs as well as inputs.
 - Allow building multi-arch x64+arm64 "Universal" Mac binary.
 - Optimize engine's cable stepping algorithm to be as CPU-efficient as non-stackable inputs.
 - Limit log file size to 10 MB.

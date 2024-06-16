@@ -265,7 +265,7 @@ struct Audio : Module {
 				float v = 0.f;
 				if (inputs[AUDIO_INPUTS + i].isConnected())
 					v = inputs[AUDIO_INPUTS + i].getVoltageSum() / 10.f;
-				// Normalize right input to left on Audio-2
+				// Normal right input to left on Audio-2
 				else if (i == 1 && NUM_AUDIO_INPUTS == 2)
 					v = inputFrame.samples[0];
 

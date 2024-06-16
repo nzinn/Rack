@@ -248,12 +248,13 @@ struct MidiParser {
 	/** Enables pitch-wheel and mod-wheel exponential smoothing */
 	bool smooth;
 
-	/** Clock output pulses per quarter note */
+	/** Number of 24 PPQN clocks between clock divider pulses */
 	uint32_t clockDivision;
 
 	/** Actual number of polyphonic channels */
 	uint8_t channels;
 
+	/** Method for assigning notes to polyphony channels */
 	enum PolyMode {
 		ROTATE_MODE,
 		REUSE_MODE,
