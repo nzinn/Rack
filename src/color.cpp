@@ -51,7 +51,6 @@ NVGcolor lerp(NVGcolor a, NVGcolor b, float t) {
 	return c;
 }
 
-/** Screen blending with alpha compositing */
 NVGcolor screen(NVGcolor a, NVGcolor b) {
 	if (a.a == 0.f)
 		return b;
