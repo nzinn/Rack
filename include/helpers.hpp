@@ -367,24 +367,6 @@ Example:
 */
 template <class TMenuItem = ui::MenuItem>
 TMenuItem* createIndexSubmenuItem(std::string text, std::vector<std::string> labels, std::function<size_t()> getter, std::function<void(size_t val)> setter, bool disabled = false, bool alwaysConsume = false) {
-	struct IndexItem : ui::MenuItem {
-		std::function<size_t()> getter;
-		std::function<void(size_t)> setter;
-		size_t index;
-		bool alwaysConsume;
-
-		void step() override {
-			size_t currIndex = getter();
-			this->rightText = CHECKMARK(currIndex == index);
-			MenuItem::step();
-		}
-		void onAction(const event::Action& e) override {
-			setter(index);
-			if (alwaysConsume)
-				e.consume(this);
-		}
-	};
-
 	struct Item : TMenuItem {
 		std::function<size_t()> getter;
 		std::function<void(size_t)> setter;
@@ -400,12 +382,11 @@ TMenuItem* createIndexSubmenuItem(std::string text, std::vector<std::string> lab
 		ui::Menu* createChildMenu() override {
 			ui::Menu* menu = new ui::Menu;
 			for (size_t i = 0; i < labels.size(); i++) {
-				IndexItem* item = createMenuItem<IndexItem>(labels[i]);
-				item->getter = getter;
-				item->setter = setter;
-				item->index = i;
-				item->alwaysConsume = alwaysConsume;
-				menu->addChild(item);
+				menu->addChild(createCheckMenuItem(labels[i], "", [=]() {
+					return getter() == i;
+				}, [=]() {
+					setter(i);
+				}, false, alwaysConsume));
 			}
 			return menu;
 		}
