@@ -298,35 +298,9 @@ Example:
 */
 template <class TMenuItem = ui::MenuItem>
 TMenuItem* createBoolMenuItem(std::string text, std::string rightText, std::function<bool()> getter, std::function<void(bool state)> setter, bool disabled = false, bool alwaysConsume = false) {
-	struct Item : TMenuItem {
-		std::string rightTextPrefix;
-		std::function<bool()> getter;
-		std::function<void(size_t)> setter;
-		bool alwaysConsume;
-
-		void step() override {
-			this->rightText = rightTextPrefix;
-			if (getter()) {
-				if (!rightTextPrefix.empty())
-					this->rightText += "  ";
-				this->rightText += CHECKMARK_STRING;
-			}
-			TMenuItem::step();
-		}
-		void onAction(const event::Action& e) override {
-			setter(!getter());
-			if (alwaysConsume)
-				e.consume(this);
-		}
-	};
-
-	Item* item = createMenuItem<Item>(text);
-	item->rightTextPrefix = rightText;
-	item->getter = getter;
-	item->setter = setter;
-	item->disabled = disabled;
-	item->alwaysConsume = alwaysConsume;
-	return item;
+	return createCheckMenuItem<TMenuItem>(text, rightText, getter, [=]() {
+		setter(!getter());
+	}, disabled, alwaysConsume);
 }
 
 
