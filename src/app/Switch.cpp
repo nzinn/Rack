@@ -76,13 +76,27 @@ void Switch::onDragStart(const DragStartEvent& e) {
 	else {
 		if (pq) {
 			float oldValue = pq->getValue();
-			if (pq->isMax()) {
-				// Reset value back to minimum
-				pq->setMin();
+
+			int mods = APP->window->getMods();
+			if ((mods & RACK_MOD_MASK) == 0) {
+				if (pq->isMax()) {
+					// Reset value back to minimum
+					pq->setMin();
+				}
+				else {
+					// Increment value by 1
+					pq->setValue(std::round(pq->getValue()) + 1.f);
+				}
 			}
-			else {
-				// Increment value by 1
-				pq->setValue(std::round(pq->getValue()) + 1.f);
+			else if ((mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+				if (pq->isMin()) {
+					// Reset value back to maximum
+					pq->setMax();
+				}
+				else {
+					// Decrement value by 1
+					pq->setValue(std::round(pq->getValue()) - 1.f);
+				}
 			}
 
 			float newValue = pq->getValue();
