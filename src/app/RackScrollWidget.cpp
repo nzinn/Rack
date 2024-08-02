@@ -154,7 +154,12 @@ void RackScrollWidget::onHoverKey(const HoverKeyEvent& e) {
 
 
 void RackScrollWidget::onHoverScroll(const HoverScrollEvent& e) {
-	if ((APP->window->getMods() & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+	int mods = APP->window->getMods();
+	if ((mods & RACK_MOD_MASK) == (settings::mouseWheelZoom ? 0 : RACK_MOD_CTRL)) {
+		// Dispatch to children first and zoom only if they don't consume
+		OpaqueWidget::onHoverScroll(e);
+		if (e.isConsumed())
+			return;
 		// Increase zoom
 		float zoomDelta = e.scrollDelta.y / 50 / 4;
 		if (settings::invertZoom)
@@ -162,10 +167,9 @@ void RackScrollWidget::onHoverScroll(const HoverScrollEvent& e) {
 		float zoom = getZoom() * std::pow(2.f, zoomDelta);
 		setZoom(zoom, e.pos);
 		e.consume(this);
+		return;
 	}
 
-	if (e.isConsumed())
-		return;
 	ScrollWidget::onHoverScroll(e);
 }
 

@@ -378,7 +378,7 @@ struct KnobScrollSensitivityQuantity : Quantity {
 		setValue(std::log2(displayValue) + getDefaultValue());
 	}
 	std::string getLabel() override {
-		return "Scroll wheel knob sensitivity";
+		return "Mouse wheel knob sensitivity";
 	}
 	int getDisplayPrecision() override {
 		return 2;
@@ -427,6 +427,8 @@ struct ViewButton : MenuButton {
 		menu->addChild(createMenuItem("Zoom to fit modules", "F4", [=]() {
 			APP->scene->rackScroll->zoomToModules();
 		}));
+
+		menu->addChild(createIndexPtrSubmenuItem("Mouse wheel", {"Scroll", "Zoom"}, &settings::mouseWheelZoom));
 
 		menu->addChild(new ui::MenuSeparator);
 		menu->addChild(createMenuLabel("Appearance"));
@@ -596,7 +598,7 @@ struct ViewButton : MenuButton {
 			}
 		}));
 
-		menu->addChild(createBoolPtrMenuItem("Scroll wheel knob control", "", &settings::knobScroll));
+		menu->addChild(createBoolPtrMenuItem("Control knobs with mouse wheel", "", &settings::knobScroll));
 
 		KnobScrollSensitivitySlider* knobScrollSensitivitySlider = new KnobScrollSensitivitySlider;
 		knobScrollSensitivitySlider->box.size.x = 250.0;

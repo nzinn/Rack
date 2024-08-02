@@ -26,6 +26,7 @@ bool windowMaximized = false;
 math::Vec windowSize = math::Vec(1024, 720);
 math::Vec windowPos = math::Vec(NAN, NAN);
 bool invertZoom = false;
+bool mouseWheelZoom = false;
 float pixelRatio = 0.0;
 std::string uiTheme = "dark";
 float cableOpacity = 0.5;
@@ -139,6 +140,8 @@ json_t* toJson() {
 	json_object_set_new(rootJ, "windowPos", windowPosJ);
 
 	json_object_set_new(rootJ, "invertZoom", json_boolean(invertZoom));
+
+	json_object_set_new(rootJ, "mouseWheelZoom", json_boolean(mouseWheelZoom));
 
 	json_object_set_new(rootJ, "pixelRatio", json_real(pixelRatio));
 
@@ -310,6 +313,10 @@ void fromJson(json_t* rootJ) {
 	json_t* invertZoomJ = json_object_get(rootJ, "invertZoom");
 	if (invertZoomJ)
 		invertZoom = json_boolean_value(invertZoomJ);
+
+	json_t* mouseWheelZoomJ = json_object_get(rootJ, "mouseWheelZoom");
+	if (mouseWheelZoomJ)
+		mouseWheelZoom = json_boolean_value(mouseWheelZoomJ);
 
 	json_t* pixelRatioJ = json_object_get(rootJ, "pixelRatio");
 	if (pixelRatioJ)

@@ -39,6 +39,8 @@ extern math::Vec windowSize;
 extern math::Vec windowPos;
 /** Reverse the zoom scroll direction */
 extern bool invertZoom;
+/** Mouse wheel zooms instead of pans. */
+extern bool mouseWheelZoom;
 /** Ratio between UI pixel and physical screen pixel.
 0 for auto.
 */
