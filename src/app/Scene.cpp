@@ -232,6 +232,10 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 			settings::cpuMeter ^= true;
 			e.consume(this);
 		}
+		if (e.key == GLFW_KEY_F4 && (e.mods & RACK_MOD_MASK) == 0) {
+			APP->scene->rackScroll->zoomToModules();
+			e.consume(this);
+		}
 		if (e.key == GLFW_KEY_F11 && (e.mods & RACK_MOD_MASK) == 0) {
 			APP->window->setFullScreen(!APP->window->isFullScreen());
 			// The MenuBar will be hidden when the mouse moves over the RackScrollWidget.

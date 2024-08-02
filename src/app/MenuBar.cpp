@@ -420,6 +420,14 @@ struct ViewButton : MenuButton {
 			}
 		}));
 
+		ZoomSlider* zoomSlider = new ZoomSlider;
+		zoomSlider->box.size.x = 250.0;
+		menu->addChild(zoomSlider);
+
+		menu->addChild(createMenuItem("Zoom to fit modules", "F4", [=]() {
+			APP->scene->rackScroll->zoomToModules();
+		}));
+
 		menu->addChild(new ui::MenuSeparator);
 		menu->addChild(createMenuLabel("Appearance"));
 
@@ -441,10 +449,6 @@ struct ViewButton : MenuButton {
 		menu->addChild(createBoolPtrMenuItem("Show tooltips", "", &settings::tooltips));
 
 		// Various sliders
-		ZoomSlider* zoomSlider = new ZoomSlider;
-		zoomSlider->box.size.x = 250.0;
-		menu->addChild(zoomSlider);
-
 		CableOpacitySlider* cableOpacitySlider = new CableOpacitySlider;
 		cableOpacitySlider->box.size.x = 250.0;
 		menu->addChild(cableOpacitySlider);

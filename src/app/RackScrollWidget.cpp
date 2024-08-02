@@ -71,6 +71,24 @@ void RackScrollWidget::setZoom(float zoom, math::Vec pivot) {
 }
 
 
+void RackScrollWidget::zoomToModules() {
+	widget::Widget* moduleContainer = rackWidget->getModuleContainer();
+	math::Rect bound = moduleContainer->getChildrenBoundingBox();
+	zoomToBound(bound);
+}
+
+
+void RackScrollWidget::zoomToBound(math::Rect bound) {
+	if (!bound.pos.isFinite())
+		return;
+	bound = bound.grow(math::Vec(24, 24));
+	math::Vec size = getSize();
+	float zoom = std::min(size.x / bound.size.x, size.y / bound.size.y);
+	offset = bound.getCenter() * zoom - size / 2;
+	zoomWidget->setZoom(zoom);
+}
+
+
 void RackScrollWidget::step() {
 	float zoom = getZoom();
 

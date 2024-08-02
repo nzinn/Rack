@@ -360,6 +360,10 @@ void ModuleWidget::onHoverKey(const HoverKeyEvent& e) {
 				system::openBrowser(manualUrl);
 			e.consume(this);
 		}
+		if (e.key == GLFW_KEY_F4 && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+			APP->scene->rackScroll->zoomToBound(getBox());
+			e.consume(this);
+		}
 	}
 
 	if (e.isConsumed())
@@ -1110,6 +1114,13 @@ void ModuleWidget::createContextMenu() {
 			return;
 		weakThis->removeAction();
 	}, false, true));
+
+	// Zoom to fit
+	menu->addChild(createMenuItem("Zoom to fit", RACK_MOD_CTRL_NAME "+F4", [=]() {
+		if (!weakThis)
+			return;
+		APP->scene->rackScroll->zoomToBound(weakThis->getBox());
+	}));
 
 	appendContextMenu(menu);
 }
