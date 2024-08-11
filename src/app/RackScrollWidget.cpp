@@ -155,7 +155,11 @@ void RackScrollWidget::onHoverKey(const HoverKeyEvent& e) {
 
 void RackScrollWidget::onHoverScroll(const HoverScrollEvent& e) {
 	int mods = APP->window->getMods();
-	if ((mods & RACK_MOD_MASK) == (settings::mouseWheelZoom ? 0 : RACK_MOD_CTRL)) {
+	bool doZoom = mods & RACK_MOD_CTRL;
+	if (settings::mouseWheelZoom)
+		doZoom ^= true;
+
+	if (doZoom) {
 		// Dispatch to children first and zoom only if they don't consume
 		OpaqueWidget::onHoverScroll(e);
 		if (e.isConsumed())
