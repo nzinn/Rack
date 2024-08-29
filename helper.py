@@ -272,14 +272,30 @@ def panel_to_components(tree):
 	}
 
 	root = tree.getroot()
-	# Get SVG scale relative to mm
-	root_height = root.get('height')
-	if root_height.endswith("mm"):
-		scale = 1
+
+	# Get page size
+	re_unit = re.compile(r'(-?\d*\.?\d*)\s*([a-zA-Z]*)')
+	root_width_match = re_unit.match(root.get('width'))
+	root_height_match = re_unit.match(root.get('height'))
+	root_width = float(root_width_match[1])
+	root_height = float(root_height_match[1])
+	# Since we emit mm2px() below, convert pixels to mm
+	if root_width_match[2] == 'mm' and root_height_match[2] == 'mm':
+		root_scale = 1
 	else:
 		svg_dpi = 75
 		mm_per_in = 25.4
-		scale = mm_per_in / svg_dpi
+		root_scale = mm_per_in / svg_dpi
+	root_width *= root_scale
+	root_height *= root_scale
+
+	# Get view box
+	view = root.get('viewBox', f"0 0 {root_width} {root_height}")
+	view_ary = view.split(' ')
+	view_x = float(view_ary[0])
+	view_y = float(view_ary[1])
+	view_width = float(view_ary[2])
+	view_height = float(view_ary[3])
 
 	# Get components layer
 	group = root.find(".//svg:g[@inkscape:label='components']", ns)
@@ -321,10 +337,10 @@ def panel_to_components(tree):
 
 		# Get position
 		if el.tag == '{' + ns['svg'] + '}rect':
-			x = float(el.get('x')) * scale
-			y = float(el.get('y')) * scale
-			width = float(el.get('width')) * scale
-			height = float(el.get('height')) * scale
+			x = (float(el.get('x')) - view_x) / view_width * root_width
+			y = (float(el.get('y')) - view_y) / view_height * root_height
+			width = (float(el.get('width')) - view_x) / view_width * root_width
+			height = (float(el.get('height')) - view_y) / view_height * root_height
 			c['x'] = round(x, 3)
 			c['y'] = round(y, 3)
 			c['width'] = round(width, 3)
@@ -332,8 +348,8 @@ def panel_to_components(tree):
 			c['cx'] = round(x + width / 2, 3)
 			c['cy'] = round(y + height / 2, 3)
 		elif el.tag == '{' + ns['svg'] + '}circle' or el.tag == '{' + ns['svg'] + '}ellipse':
-			cx = float(el.get('cx')) * scale
-			cy = float(el.get('cy')) * scale
+			cx = (float(el.get('cx')) - view_x) / view_width * root_width
+			cy = (float(el.get('cy')) - view_y) / view_height * root_height
 			c['cx'] = round(cx, 3)
 			c['cy'] = round(cy, 3)
 		else:
