@@ -24,7 +24,7 @@ void Model::fromJson(json_t* rootJ) {
 	if (nameJ)
 		name = json_string_value(nameJ);
 	if (name == "")
-		throw Exception("No module name for slug %s", slug.c_str());
+		throw Exception("Module %s/%s has no name", plugin->slug.c_str(), slug.c_str());
 
 	json_t* descriptionJ = json_object_get(rootJ, "description");
 	if (descriptionJ)
@@ -39,14 +39,19 @@ void Model::fromJson(json_t* rootJ) {
 		json_array_foreach(tagsJ, i, tagJ) {
 			std::string tag = json_string_value(tagJ);
 			int tagId = tag::findId(tag);
+			if (tagId < 0) {
+				// WARN("Module %s/%s has invalid tag \"%s\"", plugin->slug.c_str(), slug.c_str(), tag.c_str());
+				continue;
+			}
 
 			// Omit duplicates
 			auto it = std::find(tagIds.begin(), tagIds.end(), tagId);
-			if (it != tagIds.end())
+			if (it != tagIds.end()) {
+				// WARN("Module %s/%s has duplicate tag \"%s\"", plugin->slug.c_str(), slug.c_str(), tag.c_str());
 				continue;
+			}
 
-			if (tagId >= 0)
-				tagIds.push_back(tagId);
+			tagIds.push_back(tagId);
 		}
 	}
 
