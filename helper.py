@@ -237,7 +237,10 @@ def create_module(slug, panel_filename=None, source_filename=None):
 				return
 
 		# Read SVG XML
-		tree = xml.etree.ElementTree.parse(panel_filename)
+		try:
+			tree = xml.etree.ElementTree.parse(panel_filename)
+		except:
+			raise UserException("Invalid SVG")
 
 		components = panel_to_components(tree)
 
