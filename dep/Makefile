@@ -10,7 +10,7 @@ ifdef ARCH_LIN
 	glew = lib/libGLEW.a
 	glfw = lib/libglfw3.a
 	jansson = lib/libjansson.a
-	openssl = lib/libssl.a
+	openssl = lib/libcrypto.a
 	libcurl = lib/libcurl.a
 	zstd = lib/libzstd.a
 	libarchive = lib/libarchive.a
@@ -24,7 +24,7 @@ ifdef ARCH_MAC
 	glew = lib/libGLEW.a
 	glfw = lib/libglfw3.a
 	jansson = lib/libjansson.a
-	openssl = lib/libssl.a
+	openssl = lib/libcrypto.a
 	libcurl = lib/libcurl.a
 	zstd = lib/libzstd.a
 	libarchive = lib/libarchive.a
@@ -38,7 +38,7 @@ ifdef ARCH_WIN
 	glew = lib/libglew32.a
 	glfw = lib/libglfw3.a
 	jansson = lib/libjansson.a
-	openssl = lib/libssl.a
+	openssl = lib/libcrypto.a
 	libcurl = lib/libcurl.a
 	zstd = lib/libzstd.a
 	libarchive = lib/libarchive_static.a
@@ -115,34 +115,35 @@ $(jansson): | jansson-2.12
 	$(MAKE) -C jansson-2.12
 	$(MAKE) -C jansson-2.12 install
 
-openssl-1.1.1k:
-	$(WGET) "https://www.openssl.org/source/openssl-1.1.1k.tar.gz"
-	$(SHA256) openssl-1.1.1k.tar.gz 892a0875b9872acd04a9fde79b1f943075d5ea162415de3047c327df33fbaee5
-	$(UNTAR) openssl-1.1.1k.tar.gz
-	rm openssl-1.1.1k.tar.gz
+openssl-3.3.2:
+	$(WGET) "https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz"
+	$(SHA256) openssl-3.3.2.tar.gz 2e8a40b01979afe8be0bbfb3de5dc1c6709fedb46d6c89c10da114ab5fc3d281
+	$(UNTAR) openssl-3.3.2.tar.gz
+	rm openssl-3.3.2.tar.gz
 
-$(openssl): | openssl-1.1.1k
-	# The CFLAGS environment variable is ignored, so pass CFLAGS to their custom ./config script, which passes them to the compiler.
+$(openssl): | openssl-3.3.2
 	# Set no-pinshared so OpenSSL doesn't call GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_PIN, ...) on initialization on Windows. This prevents libRack from being unloaded on Windows with FreeLibrary().
-	cd openssl-1.1.1k && ./config --prefix="$(DEP_PATH)" no-shared no-hw threads no-zlib no-capieng no-pinshared $(CFLAGS)
-	$(MAKE) -C openssl-1.1.1k
-	$(MAKE) -C openssl-1.1.1k install_sw
+	# Don't use no-shared because libcurl's configure uses the shared library to find OpenSSL.
+	cd openssl-3.3.2 && ./Configure --prefix="$(DEP_PATH)" --libdir=lib no-zlib no-capieng no-pinshared no-apps no-tests no-docs no-ui-console
+	$(MAKE) -C openssl-3.3.2
+	$(MAKE) -C openssl-3.3.2 install_sw
 
-curl-7.79.1:
-	$(WGET) "https://github.com/curl/curl/releases/download/curl-7_79_1/curl-7.79.1.tar.gz" || $(WGET) "https://curl.se/download/curl-7.79.1.tar.gz"
-	$(SHA256) curl-7.79.1.tar.gz 370b11201349816287fb0ccc995e420277fbfcaf76206e309b3f60f0eda090c2
-	$(UNTAR) curl-7.79.1.tar.gz
-	rm curl-7.79.1.tar.gz
+curl-8.10.0:
+	$(WGET) "https://github.com/curl/curl/releases/download/curl-8_10_0/curl-8.10.0.tar.gz" || $(WGET) "https://curl.se/download/curl-8.10.0.tar.gz"
+	$(SHA256) curl-8.10.0.tar.gz 58c9dcf73493ae9d181fd334b3b3987ff73124621565187ade237bff1064a716
+	$(UNTAR) curl-8.10.0.tar.gz
+	rm curl-8.10.0.tar.gz
 
 CURL_FLAGS += --disable-symbol-hiding --enable-shared=no
-CURL_FLAGS += --enable-http --disable-ftp --disable-file --disable-ldap --disable-ldaps --disable-rtsp --enable-proxy --disable-dict --disable-telnet --disable-tftp --disable-pop3 --disable-imap --disable-smb --disable-smtp --disable-gopher --disable-mqtt --disable-manual --enable-threaded-resolver --enable-pthreads --enable-verbose --disable-sspi --disable-ntlm --disable-ntlm-wb --disable-tls-srp --disable-unix-sockets --disable-doh --disable-mime --disable-dateparse --disable-netrc --disable-progress-meter --disable-alt-svc
-CURL_FLAGS += --without-hyper --without-zlib --without-brotli --without-zstd --without-libpsl --without-libgsasl --without-libssh2 --without-librtmp --without-winidn --without-libidn2 --without-nghttp2 --without-ngtcp2 --without-nghttp3 --without-quiche
-CURL_FLAGS += --with-ssl="$(DEP_PATH)"
+CURL_FLAGS += --enable-http --disable-ftp --disable-file --disable-ldap --disable-ldaps --disable-rtsp --enable-proxy --disable-dict --disable-telnet --disable-tftp --disable-pop3 --disable-imap --disable-smb --disable-smtp --disable-gopher --disable-mqtt --disable-manual --disable-docs --disable-libcurl-option --enable-threaded-resolver --enable-pthreads --enable-verbose --disable-sspi --disable-aws --disable-ntlm --disable-tls-srp --disable-unix-sockets --disable-mime --disable-bindlocal --disable-netrc --disable-progress-meter --disable-alt-svc --disable-hsts
+CURL_FLAGS += --with-openssl="$(DEP_PATH)"
+CURL_FLAGS += --with-zstd="$(DEP_PATH)"
+CURL_FLAGS += --without-hyper --without-zlib --without-brotli --without-ca-fallback --without-ca-embed --without-libpsl --without-libgsasl --without-librtmp --without-winidn --without-apple-idn --without-libidn2 --without-nghttp2 --without-ngtcp2 --without-openssl-quic --without-nghttp3 --without-quiche --without-msh3 --without-libuv
 
-$(libcurl): | $(openssl) curl-7.79.1
-	cd curl-7.79.1 && PKG_CONFIG_PATH= $(CONFIGURE) $(CURL_FLAGS)
-	$(MAKE) -C curl-7.79.1
-	$(MAKE) -C curl-7.79.1 install
+$(libcurl): | $(openssl) $(zstd) curl-8.10.0
+	cd curl-8.10.0 && PKG_CONFIG_PATH= $(CONFIGURE) $(CURL_FLAGS)
+	$(MAKE) -C curl-8.10.0
+	$(MAKE) -C curl-8.10.0 install
 
 zstd-1.4.5:
 	$(WGET) "https://github.com/facebook/zstd/releases/download/v1.4.5/zstd-1.4.5.tar.gz"
@@ -264,7 +265,7 @@ $(simde): simde/simde
 
 # Helpers
 
-src: glew-2.1.0 glfw jansson-2.12 libsamplerate-0.1.9 openssl-1.1.1k curl-7.79.1 zstd-1.4.5 libarchive-3.4.3 rtaudio nanovg nanosvg oui-blendish osdialog
+src: glew-2.1.0 glfw jansson-2.12 libsamplerate-0.1.9 openssl-3.3.2 curl-8.10.0 zstd-1.4.5 libarchive-3.4.3 rtaudio nanovg nanosvg oui-blendish osdialog
 
 clean:
 	git clean -fdx
