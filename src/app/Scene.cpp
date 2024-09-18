@@ -171,39 +171,39 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 	// Key commands that override children
 	if (e.action == GLFW_PRESS || e.action == GLFW_REPEAT) {
 		// DEBUG("key '%d '%c' scancode %d '%c' keyName '%s'", e.key, e.key, e.scancode, e.scancode, e.keyName.c_str());
-		if (e.keyName == "n" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_N && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->patch->loadTemplateDialog();
 			e.consume(this);
 		}
-		if (e.keyName == "q" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_Q && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->window->close();
 			e.consume(this);
 		}
-		if (e.keyName == "o" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_O && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->patch->loadDialog();
 			e.consume(this);
 		}
-		if (e.keyName == "o" && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		if (e.key == GLFW_KEY_O && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 			APP->patch->revertDialog();
 			e.consume(this);
 		}
-		if (e.keyName == "s" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_S && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->patch->saveDialog();
 			e.consume(this);
 		}
-		if (e.keyName == "s" && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		if (e.key == GLFW_KEY_S && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 			APP->patch->saveAsDialog();
 			e.consume(this);
 		}
-		if (e.keyName == "z" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_Z && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->history->undo();
 			e.consume(this);
 		}
-		if (e.keyName == "z" && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		if (e.key == GLFW_KEY_Z && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 			APP->history->redo();
 			e.consume(this);
 		}
-		if (e.keyName == "-" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if ((e.key == GLFW_KEY_MINUS || e.key == GLFW_KEY_KP_SUBTRACT) && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			float zoom = std::log2(APP->scene->rackScroll->getZoom());
 			zoom *= 2;
 			zoom = std::ceil(zoom - 0.01f) - 1;
@@ -212,7 +212,7 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 			e.consume(this);
 		}
 		// Numpad has a "+" key, but the main keyboard section hides it under "="
-		if ((e.keyName == "=" || e.keyName == "+") && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if ((e.key == GLFW_KEY_EQUAL || e.key == GLFW_KEY_KP_ADD) && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			float zoom = std::log2(APP->scene->rackScroll->getZoom());
 			zoom *= 2;
 			zoom = std::floor(zoom + 0.01f) + 1;
@@ -220,7 +220,7 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 			APP->scene->rackScroll->setZoom(std::pow(2.f, zoom));
 			e.consume(this);
 		}
-		if ((e.keyName == "0") && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if ((e.key == GLFW_KEY_0 || e.key == GLFW_KEY_KP_0) && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			APP->scene->rackScroll->setZoom(1.f);
 			e.consume(this);
 		}
@@ -244,51 +244,51 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 		}
 
 		// Module selections
-		if (e.keyName == "a" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_A && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			rack->selectAll();
 			e.consume(this);
 		}
-		if (e.keyName == "a" && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		if (e.key == GLFW_KEY_A && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 			rack->deselectAll();
 			e.consume(this);
 		}
-		if (e.keyName == "c" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_C && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->copyClipboardSelection();
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "i" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_I && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->resetSelectionAction();
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "r" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_R && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->randomizeSelectionAction();
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "u" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_U && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->disconnectSelectionAction();
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "e" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_E && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->bypassSelectionAction(!rack->isSelectionBypassed());
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "d" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_D && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			if (rack->hasSelection()) {
 				rack->cloneSelectionAction(false);
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "d" && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
+		if (e.key == GLFW_KEY_D && (e.mods & RACK_MOD_MASK) == (RACK_MOD_CTRL | GLFW_MOD_SHIFT)) {
 			if (rack->hasSelection()) {
 				rack->cloneSelectionAction(true);
 				e.consume(this);
@@ -337,7 +337,7 @@ void Scene::onHoverKey(const HoverKeyEvent& e) {
 				e.consume(this);
 			}
 		}
-		if (e.keyName == "v" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_V && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			rack->pasteClipboardAction();
 			e.consume(this);
 		}

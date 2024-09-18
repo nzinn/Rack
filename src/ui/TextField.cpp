@@ -206,22 +206,22 @@ void TextField::onSelectKey(const SelectKeyEvent& e) {
 			e.consume(this);
 		}
 		// Ctrl+V
-		if (e.keyName == "v" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_V && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			pasteClipboard();
 			e.consume(this);
 		}
 		// Ctrl+X
-		if (e.keyName == "x" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_X && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			cutClipboard();
 			e.consume(this);
 		}
 		// Ctrl+C
-		if (e.keyName == "c" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_C && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			copyClipboard();
 			e.consume(this);
 		}
 		// Ctrl+A
-		if (e.keyName == "a" && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
+		if (e.key == GLFW_KEY_A && (e.mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
 			selectAll();
 			e.consume(this);
 		}
@@ -249,7 +249,7 @@ void TextField::onSelectKey(const SelectKeyEvent& e) {
 			e.consume(this);
 		}
 		// Consume all printable keys unless Ctrl is held
-		if ((e.mods & RACK_MOD_CTRL) == 0 && e.keyName != "") {
+		if ((GLFW_KEY_SPACE <= e.key && e.key <= GLFW_KEY_GRAVE_ACCENT) && (e.mods & RACK_MOD_CTRL) == 0) {
 			e.consume(this);
 		}
 
