@@ -17,7 +17,11 @@ Use this instead of GLFW_MOD_CONTROL, since Cmd should be used on Mac in place o
 	#define RACK_MOD_CTRL GLFW_MOD_CONTROL
 	#define RACK_MOD_CTRL_NAME "Ctrl"
 #endif
+
+#define RACK_MOD_SHIFT GLFW_MOD_SHIFT
 #define RACK_MOD_SHIFT_NAME "Shift"
+
+#define RACK_MOD_ALT GLFW_MOD_ALT
 #define RACK_MOD_ALT_NAME "Alt"
 
 /** Filters actual mod keys from the mod flags.
@@ -34,6 +38,10 @@ Example usage:
 
 namespace rack {
 namespace widget {
+
+
+std::string getKeyName(int key);
+std::string getKeyCommandName(int key, int mods);
 
 
 struct Widget;

@@ -73,11 +73,11 @@ struct FileButton : MenuButton {
 		menu->cornerFlags = BND_CORNER_TOP;
 		menu->box.pos = getAbsoluteOffset(math::Vec(0, box.size.y));
 
-		menu->addChild(createMenuItem("New", RACK_MOD_CTRL_NAME "+N", []() {
+		menu->addChild(createMenuItem("New", widget::getKeyCommandName(GLFW_KEY_N, RACK_MOD_CTRL), []() {
 			APP->patch->loadTemplateDialog();
 		}));
 
-		menu->addChild(createMenuItem("Open", RACK_MOD_CTRL_NAME "+O", []() {
+		menu->addChild(createMenuItem("Open", widget::getKeyCommandName(GLFW_KEY_O, RACK_MOD_CTRL), []() {
 			APP->patch->loadDialog();
 		}));
 
@@ -90,11 +90,11 @@ struct FileButton : MenuButton {
 			}
 		}, settings::recentPatchPaths.empty()));
 
-		menu->addChild(createMenuItem("Save", RACK_MOD_CTRL_NAME "+S", []() {
+		menu->addChild(createMenuItem("Save", widget::getKeyCommandName(GLFW_KEY_S, RACK_MOD_CTRL), []() {
 			APP->patch->saveDialog();
 		}));
 
-		menu->addChild(createMenuItem("Save as", RACK_MOD_CTRL_NAME "+Shift+S", []() {
+		menu->addChild(createMenuItem("Save as", widget::getKeyCommandName(GLFW_KEY_S, RACK_MOD_CTRL | GLFW_MOD_SHIFT), []() {
 			APP->patch->saveAsDialog();
 		}));
 
@@ -102,7 +102,7 @@ struct FileButton : MenuButton {
 			APP->patch->saveAsDialog(false);
 		}));
 
-		menu->addChild(createMenuItem("Revert", RACK_MOD_CTRL_NAME "+" RACK_MOD_SHIFT_NAME "+O", []() {
+		menu->addChild(createMenuItem("Revert", widget::getKeyCommandName(GLFW_KEY_O, RACK_MOD_CTRL | GLFW_MOD_SHIFT), []() {
 			APP->patch->revertDialog();
 		}, APP->patch->path == ""));
 
@@ -119,7 +119,7 @@ struct FileButton : MenuButton {
 
 		menu->addChild(new ui::MenuSeparator);
 
-		menu->addChild(createMenuItem("Quit", RACK_MOD_CTRL_NAME "+Q", []() {
+		menu->addChild(createMenuItem("Quit", widget::getKeyCommandName(GLFW_KEY_Q, RACK_MOD_CTRL), []() {
 			APP->window->close();
 		}));
 	}
@@ -147,7 +147,7 @@ struct EditButton : MenuButton {
 				APP->history->undo();
 			}
 		};
-		menu->addChild(createMenuItem<UndoItem>("", RACK_MOD_CTRL_NAME "+Z"));
+		menu->addChild(createMenuItem<UndoItem>("", widget::getKeyCommandName(GLFW_KEY_Z, RACK_MOD_CTRL)));
 
 		struct RedoItem : ui::MenuItem {
 			void step() override {
@@ -159,7 +159,7 @@ struct EditButton : MenuButton {
 				APP->history->redo();
 			}
 		};
-		menu->addChild(createMenuItem<RedoItem>("", RACK_MOD_CTRL_NAME "+" RACK_MOD_SHIFT_NAME "+Z"));
+		menu->addChild(createMenuItem<RedoItem>("", widget::getKeyCommandName(GLFW_KEY_Z, RACK_MOD_CTRL | GLFW_MOD_SHIFT)));
 
 		menu->addChild(createMenuItem("Clear cables", "", [=]() {
 			APP->patch->disconnectDialog();
@@ -403,7 +403,7 @@ struct ViewButton : MenuButton {
 		menu->addChild(createMenuLabel("Window"));
 
 		bool fullscreen = APP->window->isFullScreen();
-		std::string fullscreenText = "F11";
+		std::string fullscreenText = widget::getKeyCommandName(GLFW_KEY_F11, 0);
 		if (fullscreen)
 			fullscreenText += " " CHECKMARK_STRING;
 		menu->addChild(createMenuItem("Fullscreen", fullscreenText, [=]() {
@@ -424,7 +424,7 @@ struct ViewButton : MenuButton {
 		zoomSlider->box.size.x = 250.0;
 		menu->addChild(zoomSlider);
 
-		menu->addChild(createMenuItem("Zoom to fit modules", "F4", [=]() {
+		menu->addChild(createMenuItem("Zoom to fit modules", widget::getKeyCommandName(GLFW_KEY_F4, 0), [=]() {
 			APP->scene->rackScroll->zoomToModules();
 		}));
 
@@ -668,7 +668,7 @@ struct EngineButton : MenuButton {
 		menu->cornerFlags = BND_CORNER_TOP;
 		menu->box.pos = getAbsoluteOffset(math::Vec(0, box.size.y));
 
-		std::string cpuMeterText = "F3";
+		std::string cpuMeterText = widget::getKeyCommandName(GLFW_KEY_F3, 0);
 		if (settings::cpuMeter)
 			cpuMeterText += " " CHECKMARK_STRING;
 		menu->addChild(createMenuItem("Performance meters", cpuMeterText, [=]() {
@@ -986,7 +986,7 @@ struct HelpButton : MenuButton {
 			APP->scene->addChild(tipWindowCreate());
 		}));
 
-		menu->addChild(createMenuItem("User manual", "F1", [=]() {
+		menu->addChild(createMenuItem("User manual", widget::getKeyCommandName(GLFW_KEY_F1, 0), [=]() {
 			system::openBrowser("https://vcvrack.com/manual");
 		}));
 

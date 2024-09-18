@@ -1306,22 +1306,22 @@ void RackWidget::appendSelectionContextMenu(ui::Menu* menu) {
 	// Enable alwaysConsume of menu items if the number of selected modules changes
 
 	// Select all
-	menu->addChild(createMenuItem("Select all", RACK_MOD_CTRL_NAME "+A", [=]() {
+	menu->addChild(createMenuItem("Select all", widget::getKeyCommandName(GLFW_KEY_A, RACK_MOD_CTRL), [=]() {
 		selectAll();
 	}, false, true));
 
 	// Deselect
-	menu->addChild(createMenuItem("Deselect", RACK_MOD_CTRL_NAME "+" RACK_MOD_SHIFT_NAME "+A", [=]() {
+	menu->addChild(createMenuItem("Deselect", widget::getKeyCommandName(GLFW_KEY_A, RACK_MOD_CTRL | GLFW_MOD_SHIFT), [=]() {
 		deselectAll();
 	}, n == 0, true));
 
 	// Copy
-	menu->addChild(createMenuItem("Copy", RACK_MOD_CTRL_NAME "+C", [=]() {
+	menu->addChild(createMenuItem("Copy", widget::getKeyCommandName(GLFW_KEY_C, RACK_MOD_CTRL), [=]() {
 		copyClipboardSelection();
 	}, n == 0));
 
 	// Paste
-	menu->addChild(createMenuItem("Paste", RACK_MOD_CTRL_NAME "+V", [=]() {
+	menu->addChild(createMenuItem("Paste", widget::getKeyCommandName(GLFW_KEY_V, RACK_MOD_CTRL), [=]() {
 		pasteClipboardAction();
 	}, false, true));
 
@@ -1331,22 +1331,22 @@ void RackWidget::appendSelectionContextMenu(ui::Menu* menu) {
 	}, n == 0));
 
 	// Initialize
-	menu->addChild(createMenuItem("Initialize", RACK_MOD_CTRL_NAME "+I", [=]() {
+	menu->addChild(createMenuItem("Initialize", widget::getKeyCommandName(GLFW_KEY_I, RACK_MOD_CTRL), [=]() {
 		resetSelectionAction();
 	}, n == 0));
 
 	// Randomize
-	menu->addChild(createMenuItem("Randomize", RACK_MOD_CTRL_NAME "+R", [=]() {
+	menu->addChild(createMenuItem("Randomize", widget::getKeyCommandName(GLFW_KEY_R, RACK_MOD_CTRL), [=]() {
 		randomizeSelectionAction();
 	}, n == 0));
 
 	// Disconnect cables
-	menu->addChild(createMenuItem("Disconnect cables", RACK_MOD_CTRL_NAME "+U", [=]() {
+	menu->addChild(createMenuItem("Disconnect cables", widget::getKeyCommandName(GLFW_KEY_U, RACK_MOD_CTRL), [=]() {
 		disconnectSelectionAction();
 	}, n == 0));
 
 	// Bypass
-	std::string bypassText = RACK_MOD_CTRL_NAME "+E";
+	std::string bypassText = widget::getKeyCommandName(GLFW_KEY_E, RACK_MOD_CTRL);
 	bool bypassed = (n > 0) && isSelectionBypassed();
 	if (bypassed)
 		bypassText += " " CHECKMARK_STRING;
@@ -1355,17 +1355,17 @@ void RackWidget::appendSelectionContextMenu(ui::Menu* menu) {
 	}, n == 0, true));
 
 	// Duplicate
-	menu->addChild(createMenuItem("Duplicate", RACK_MOD_CTRL_NAME "+D", [=]() {
+	menu->addChild(createMenuItem("Duplicate", widget::getKeyCommandName(GLFW_KEY_D, RACK_MOD_CTRL), [=]() {
 		cloneSelectionAction(false);
 	}, n == 0));
 
 	// Duplicate with cables
-	menu->addChild(createMenuItem("└ with cables", RACK_MOD_SHIFT_NAME "+" RACK_MOD_CTRL_NAME "+D", [=]() {
+	menu->addChild(createMenuItem("└ with cables", widget::getKeyCommandName(GLFW_KEY_D, RACK_MOD_CTRL | GLFW_MOD_SHIFT), [=]() {
 		cloneSelectionAction(true);
 	}, n == 0));
 
 	// Delete
-	menu->addChild(createMenuItem("Delete", "Backspace/Delete", [=]() {
+	menu->addChild(createMenuItem("Delete", widget::getKeyCommandName(GLFW_KEY_BACKSPACE, 0) + "/" + widget::getKeyCommandName(GLFW_KEY_DELETE, 0), [=]() {
 		deleteSelectionAction();
 	}, n == 0, true));
 }

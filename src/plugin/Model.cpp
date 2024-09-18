@@ -156,7 +156,7 @@ void Model::appendContextMenu(ui::Menu* menu, bool inBrowser) {
 	// manual
 	std::string manualUrl = getManualUrl();
 	if (manualUrl != "") {
-		menu->addChild(createMenuItem("User manual", RACK_MOD_CTRL_NAME "+F1", [=]() {
+		menu->addChild(createMenuItem("User manual", widget::getKeyCommandName(GLFW_KEY_F1, RACK_MOD_CTRL), [=]() {
 			system::openBrowser(manualUrl);
 		}));
 	}

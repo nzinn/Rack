@@ -1015,13 +1015,13 @@ void ModuleWidget::createContextMenu() {
 
 	// Preset
 	menu->addChild(createSubmenuItem("Preset", "", [=](ui::Menu* menu) {
-		menu->addChild(createMenuItem("Copy", RACK_MOD_CTRL_NAME "+C", [=]() {
+		menu->addChild(createMenuItem("Copy", widget::getKeyCommandName(GLFW_KEY_C, RACK_MOD_CTRL), [=]() {
 			if (!weakThis)
 				return;
 			weakThis->copyClipboard();
 		}));
 
-		menu->addChild(createMenuItem("Paste", RACK_MOD_CTRL_NAME "+V", [=]() {
+		menu->addChild(createMenuItem("Paste", widget::getKeyCommandName(GLFW_KEY_V, RACK_MOD_CTRL), [=]() {
 			if (!weakThis)
 				return;
 			weakThis->pasteClipboardAction();
@@ -1063,28 +1063,28 @@ void ModuleWidget::createContextMenu() {
 	}));
 
 	// Initialize
-	menu->addChild(createMenuItem("Initialize", RACK_MOD_CTRL_NAME "+I", [=]() {
+	menu->addChild(createMenuItem("Initialize", widget::getKeyCommandName(GLFW_KEY_I, RACK_MOD_CTRL), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->resetAction();
 	}));
 
 	// Randomize
-	menu->addChild(createMenuItem("Randomize", RACK_MOD_CTRL_NAME "+R", [=]() {
+	menu->addChild(createMenuItem("Randomize", widget::getKeyCommandName(GLFW_KEY_R, RACK_MOD_CTRL), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->randomizeAction();
 	}));
 
 	// Disconnect cables
-	menu->addChild(createMenuItem("Disconnect cables", RACK_MOD_CTRL_NAME "+U", [=]() {
+	menu->addChild(createMenuItem("Disconnect cables", widget::getKeyCommandName(GLFW_KEY_U, RACK_MOD_CTRL), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->disconnectAction();
 	}));
 
 	// Bypass
-	std::string bypassText = RACK_MOD_CTRL_NAME "+E";
+	std::string bypassText = widget::getKeyCommandName(GLFW_KEY_E, RACK_MOD_CTRL);
 	bool bypassed = module && module->isBypassed();
 	if (bypassed)
 		bypassText += " " CHECKMARK_STRING;
@@ -1095,28 +1095,28 @@ void ModuleWidget::createContextMenu() {
 	}));
 
 	// Duplicate
-	menu->addChild(createMenuItem("Duplicate", RACK_MOD_CTRL_NAME "+D", [=]() {
+	menu->addChild(createMenuItem("Duplicate", widget::getKeyCommandName(GLFW_KEY_D, RACK_MOD_CTRL), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->cloneAction(false);
 	}));
 
 	// Duplicate with cables
-	menu->addChild(createMenuItem("└ with cables", RACK_MOD_SHIFT_NAME "+" RACK_MOD_CTRL_NAME "+D", [=]() {
+	menu->addChild(createMenuItem("└ with cables", widget::getKeyCommandName(GLFW_KEY_D, RACK_MOD_CTRL | GLFW_MOD_SHIFT), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->cloneAction(true);
 	}));
 
 	// Delete
-	menu->addChild(createMenuItem("Delete", "Backspace/Delete", [=]() {
+	menu->addChild(createMenuItem("Delete", widget::getKeyCommandName(GLFW_KEY_BACKSPACE, 0) + "/" + widget::getKeyCommandName(GLFW_KEY_DELETE, 0), [=]() {
 		if (!weakThis)
 			return;
 		weakThis->removeAction();
 	}, false, true));
 
 	// Zoom to fit
-	menu->addChild(createMenuItem("Zoom to fit", RACK_MOD_CTRL_NAME "+F4", [=]() {
+	menu->addChild(createMenuItem("Zoom to fit", widget::getKeyCommandName(GLFW_KEY_F4, RACK_MOD_CTRL), [=]() {
 		if (!weakThis)
 			return;
 		APP->scene->rackScroll->zoomToBound(weakThis->getBox());

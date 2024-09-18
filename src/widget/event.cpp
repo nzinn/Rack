@@ -9,6 +9,61 @@ namespace rack {
 namespace widget {
 
 
+std::string getKeyName(int key) {
+	// glfwGetKeyName overrides
+	switch (key) {
+		case GLFW_KEY_SPACE: return "Space";
+	}
+
+	const char* keyNameC = glfwGetKeyName(key, GLFW_KEY_UNKNOWN);
+	if (keyNameC) {
+		std::string keyName = keyNameC;
+		if (keyName.size() == 1)
+			keyName[0] = std::toupper((unsigned char) keyName[0]);
+		return keyName;
+	}
+
+	// Unprintable keys with names
+	switch (key) {
+		case GLFW_KEY_ESCAPE: return "Escape";
+		case GLFW_KEY_ENTER: return "Enter";
+		case GLFW_KEY_TAB: return "Tab";
+		case GLFW_KEY_BACKSPACE: return "Backspace";
+		case GLFW_KEY_INSERT: return "Insert";
+		case GLFW_KEY_DELETE: return "Delete";
+		case GLFW_KEY_RIGHT: return "Right";
+		case GLFW_KEY_LEFT: return "Left";
+		case GLFW_KEY_DOWN: return "Down";
+		case GLFW_KEY_UP: return "Up";
+		case GLFW_KEY_PAGE_UP: return "Page Up";
+		case GLFW_KEY_PAGE_DOWN: return "Page Down";
+		case GLFW_KEY_HOME: return "Home";
+		case GLFW_KEY_END: return "End";
+		case GLFW_KEY_KP_ENTER: return "Enter";
+	}
+
+	if (GLFW_KEY_F1 <= key && key <= GLFW_KEY_F25)
+		return string::f("F%d", key - GLFW_KEY_F1 + 1);
+
+	return "";
+}
+
+
+std::string getKeyCommandName(int key, int mods) {
+	std::string modsName;
+	if (mods & RACK_MOD_CTRL) {
+		modsName += RACK_MOD_CTRL_NAME "+";
+	}
+	if (mods & GLFW_MOD_SHIFT) {
+		modsName += RACK_MOD_SHIFT_NAME "+";
+	}
+	if (mods & GLFW_MOD_ALT) {
+		modsName += RACK_MOD_ALT_NAME "+";
+	}
+	return modsName + getKeyName(key);
+}
+
+
 void EventState::setHoveredWidget(widget::Widget* w) {
 	if (w == hoveredWidget)
 		return;
