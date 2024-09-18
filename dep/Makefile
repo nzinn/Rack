@@ -137,8 +137,7 @@ curl-8.10.0:
 CURL_FLAGS += --disable-symbol-hiding --enable-shared=no
 CURL_FLAGS += --enable-http --disable-ftp --disable-file --disable-ldap --disable-ldaps --disable-rtsp --enable-proxy --disable-dict --disable-telnet --disable-tftp --disable-pop3 --disable-imap --disable-smb --disable-smtp --disable-gopher --disable-mqtt --disable-manual --disable-docs --disable-libcurl-option --enable-threaded-resolver --enable-pthreads --enable-verbose --disable-sspi --disable-aws --disable-ntlm --disable-tls-srp --disable-unix-sockets --disable-mime --disable-bindlocal --disable-netrc --disable-progress-meter --disable-alt-svc --disable-hsts
 CURL_FLAGS += --with-openssl="$(DEP_PATH)"
-CURL_FLAGS += --with-zstd="$(DEP_PATH)"
-CURL_FLAGS += --without-hyper --without-zlib --without-brotli --without-ca-fallback --without-ca-embed --without-libpsl --without-libgsasl --without-librtmp --without-winidn --without-apple-idn --without-libidn2 --without-nghttp2 --without-ngtcp2 --without-openssl-quic --without-nghttp3 --without-quiche --without-msh3 --without-libuv
+CURL_FLAGS += --without-hyper --without-zlib --without-brotli --without-zstd --without-ca-fallback --without-ca-embed --without-libpsl --without-libgsasl --without-librtmp --without-winidn --without-apple-idn --without-libidn2 --without-nghttp2 --without-ngtcp2 --without-openssl-quic --without-nghttp3 --without-quiche --without-msh3 --without-libuv
 
 $(libcurl): | $(openssl) $(zstd) curl-8.10.0
 	cd curl-8.10.0 && PKG_CONFIG_PATH= $(CONFIGURE) $(CURL_FLAGS)
