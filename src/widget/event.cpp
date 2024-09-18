@@ -268,7 +268,7 @@ bool EventState::handleDrop(math::Vec pos, const std::vector<std::string>& paths
 	return !!cPathDrop.target;
 }
 
-bool EventState::handleText(math::Vec pos, int codepoint) {
+bool EventState::handleText(math::Vec pos, uint32_t codepoint) {
 	if (selectedWidget) {
 		// Dispatch SelectTextEvent
 		EventContext cSelectText;

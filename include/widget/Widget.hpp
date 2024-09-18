@@ -299,7 +299,7 @@ struct Widget : WeakBase {
 	/** An event prototype with a Unicode character. */
 	struct TextBaseEvent {
 		/** Unicode code point of the character */
-		int codepoint;
+		uint32_t codepoint;
 	};
 	/** Occurs when a character is typed while the mouse is hovering a Widget.
 	Recurses.

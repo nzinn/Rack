@@ -148,7 +148,7 @@ struct EventState {
 	bool handleHover(math::Vec pos, math::Vec mouseDelta);
 	bool handleLeave();
 	bool handleScroll(math::Vec pos, math::Vec scrollDelta);
-	bool handleText(math::Vec pos, int codepoint);
+	bool handleText(math::Vec pos, uint32_t codepoint);
 	bool handleKey(math::Vec pos, int key, int scancode, int action, int mods);
 	bool handleDrop(math::Vec pos, const std::vector<std::string>& paths);
 	bool handleDirty();
