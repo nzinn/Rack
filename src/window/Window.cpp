@@ -24,6 +24,14 @@
 #include <plugin.hpp> // used in Window::screenshot
 #include <system.hpp> // used in Window::screenshot
 
+#if defined ARCH_LIN
+	// For XkbGetState for directly getting mod keys
+	#include <X11/XKBlib.h>
+	// For glfwGetX11Display()
+	#define GLFW_EXPOSE_NATIVE_X11
+	#include <GLFW/glfw3native.h>
+#endif
+
 
 namespace rack {
 namespace window {
@@ -663,6 +671,27 @@ bool Window::isCursorLocked() {
 
 int Window::getMods() {
 	int mods = 0;
+#if defined ARCH_LIN
+	// On Linux X11, get mods directly from X11 display, to support X11 key remapping
+	Display* display = glfwGetX11Display();
+	XkbStateRec state;
+	XkbGetState(display, XkbUseCoreKbd, &state);
+
+	// Derived from GLFW's translateState() from x11_window.c
+	if (state.mods & ShiftMask)
+		mods |= GLFW_MOD_SHIFT;
+	if (state.mods & ControlMask)
+		mods |= GLFW_MOD_CONTROL;
+	if (state.mods & Mod1Mask)
+		mods |= GLFW_MOD_ALT;
+	if (state.mods & Mod4Mask)
+		mods |= GLFW_MOD_SUPER;
+	if (state.mods & LockMask)
+		mods |= GLFW_MOD_CAPS_LOCK;
+	if (state.mods & Mod2Mask)
+		mods |= GLFW_MOD_NUM_LOCK;
+#else
+	// Use GLFW key codes on other OS's
 	if (glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
 		mods |= GLFW_MOD_SHIFT;
 	if (glfwGetKey(win, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
@@ -671,6 +700,7 @@ int Window::getMods() {
 		mods |= GLFW_MOD_ALT;
 	if (glfwGetKey(win, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS || glfwGetKey(win, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
 		mods |= GLFW_MOD_SUPER;
+#endif
 	return mods;
 }
 
