@@ -428,7 +428,7 @@ struct ViewButton : MenuButton {
 			APP->scene->rackScroll->zoomToModules();
 		}));
 
-		menu->addChild(createIndexPtrSubmenuItem("Mouse wheel", {"Scroll", "Zoom"}, &settings::mouseWheelZoom));
+		menu->addChild(createIndexPtrSubmenuItem("Mouse wheel", {"Scroll (" RACK_MOD_CTRL_NAME " to zoom)", "Zoom (" RACK_MOD_CTRL_NAME " to scroll)"}, &settings::mouseWheelZoom));
 
 		menu->addChild(new ui::MenuSeparator);
 		menu->addChild(createMenuLabel("Appearance"));
