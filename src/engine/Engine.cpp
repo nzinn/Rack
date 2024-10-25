@@ -9,7 +9,6 @@
 #include <engine/Engine.hpp>
 #include <settings.hpp>
 #include <system.hpp>
-#include <random.hpp>
 #include <context.hpp>
 #include <patch.hpp>
 #include <plugin.hpp>
@@ -523,7 +522,6 @@ void Engine::stepBlock(int frames) {
 	SharedLock<SharedMutex> lock(internal->mutex);
 	// Configure thread
 	system::resetFpuFlags();
-	random::init();
 
 	internal->blockFrame = internal->frame;
 	internal->blockTime = system::getTime();
@@ -1337,7 +1335,6 @@ void EngineWorker::run() {
 	contextSet(engine->internal->context);
 	system::setThreadName(string::f("Worker %d", id));
 	system::resetFpuFlags();
-	random::init();
 
 	while (true) {
 		engine->internal->engineBarrier.wait();
