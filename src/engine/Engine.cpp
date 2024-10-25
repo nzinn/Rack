@@ -5,6 +5,7 @@
 #include <mutex>
 #include <atomic>
 #include <tuple>
+#include <pthread.h>
 
 #include <engine/Engine.hpp>
 #include <settings.hpp>
@@ -147,15 +148,52 @@ struct HybridBarrier {
 struct EngineWorker {
 	Engine* engine;
 	int id;
-	std::thread thread;
+	pthread_t thread;
 	bool running = false;
 
 	void start() {
-		assert(!running);
+		if (running) {
+			WARN("Engine worker already started");
+			return;
+		}
 		running = true;
-		thread = std::thread([&] {
-			run();
-		});
+
+		// Launch high-priority thread if possible
+		int err;
+		pthread_attr_t attr;
+		pthread_attr_init(&attr);
+
+		// TODO Set this on each OS
+		// Note this requires root on Linux
+		int policy = SCHED_RR;
+		pthread_attr_setschedpolicy(&attr, policy);
+
+		int minPriority = sched_get_priority_min(policy);
+		int maxPriority = sched_get_priority_max(policy);
+		// TODO Set this on each OS
+		int priority = 15;
+		priority = std::min(std::max(priority, minPriority), maxPriority);
+		sched_param param;
+		param.sched_priority = priority;
+		pthread_attr_setschedparam(&attr, &param);
+
+		DEBUG("EngineWorker %d thread launching with policy %d priority %d (min %d, max %d)", id, policy, param.sched_priority, minPriority, maxPriority);
+		err = pthread_create(&thread, &attr, [](void* p) -> void* {
+			EngineWorker* that = (EngineWorker*) p;
+
+			int policy;
+			sched_param param;
+			pthread_getschedparam(pthread_self(), &policy, &param);
+			DEBUG("EngineWorker %d thread launched with policy %d priority %d", that->id, policy, param.sched_priority);
+
+			that->run();
+			return NULL;
+		}, this);
+		if (err) {
+			WARN("Could not launch worker thread %d: %s", id, strerror(err));
+		}
+
+		pthread_attr_destroy(&attr);
 	}
 
 	void requestStop() {
@@ -163,8 +201,7 @@ struct EngineWorker {
 	}
 
 	void join() {
-		assert(thread.joinable());
-		thread.join();
+		pthread_join(thread, NULL);
 	}
 
 	void run();
