@@ -163,15 +163,23 @@ struct EngineWorker {
 		pthread_attr_t attr;
 		pthread_attr_init(&attr);
 
-		// TODO Set this on each OS
-		// Note this requires root on Linux
-		int policy = SCHED_RR;
+		int policy = SCHED_OTHER;
+#if defined ARCH_LIN || defined ARCH_WIN
+		// SCHED_FIFO and SCHED_RR require root or cap_sys_nice on Linux.
+		// WinPthreads doesn't use this policy setting.
+#endif
 		pthread_attr_setschedpolicy(&attr, policy);
 
 		int minPriority = sched_get_priority_min(policy);
 		int maxPriority = sched_get_priority_max(policy);
-		// TODO Set this on each OS
-		int priority = 15;
+		int priority = 0;
+#if defined ARCH_LIN
+		// Only 0 priority allowed for SCHED_OTHER on Linux.
+#elif defined ARCH_WIN
+		// Should be 15, same priority as RTAUDIO_SCHEDULE_REALTIME on WASAPI.
+		// Maps to THREAD_PRIORITY_TIME_CRITICAL on Windows.
+		priority = maxPriority;
+#endif
 		priority = std::min(std::max(priority, minPriority), maxPriority);
 		sched_param param;
 		param.sched_priority = priority;
