@@ -26,6 +26,7 @@ namespace app {
 struct RackWidget::Internal {
 	RailWidget* rail = NULL;
 	widget::Widget* moduleContainer = NULL;
+	widget::Widget* plugContainer = NULL;
 	widget::Widget* cableContainer = NULL;
 	CableWidget* incompleteCable = NULL;
 	int nextCableColorId = 0;
@@ -74,7 +75,8 @@ struct ModuleContainer : widget::Widget {
 };
 
 
-struct CableContainer : widget::TransparentWidget {
+/** Children PlugWidgets are owned by CableWidgets. */
+struct PlugContainer : widget::TransparentWidget {
 	void draw(const DrawArgs& args) override {
 		// Don't draw on layer 0
 	}
@@ -84,17 +86,28 @@ struct CableContainer : widget::TransparentWidget {
 			// Draw Plugs
 			Widget::draw(args);
 
-			// Draw cable lights
+			// Draw plug lights
 			nvgSave(args.vg);
 			nvgGlobalTint(args.vg, color::WHITE);
 			Widget::drawLayer(args, 1);
 			nvgRestore(args.vg);
+		}
+	}
+};
 
+
+struct CableContainer : widget::TransparentWidget {
+	void draw(const DrawArgs& args) override {
+		// Don't draw on layer 0
+	}
+
+	void drawLayer(const DrawArgs& args, int layer) override {
+		if (layer == 3) {
 			// Draw cable shadows
-			Widget::drawLayer(args, 2);
+			Widget::drawLayer(args, -1);
 
 			// Draw cables
-			Widget::drawLayer(args, 3);
+			Widget::draw(args);
 		}
 	}
 };
@@ -108,6 +121,9 @@ RackWidget::RackWidget() {
 
 	internal->moduleContainer = new ModuleContainer;
 	addChild(internal->moduleContainer);
+
+	internal->plugContainer = new PlugContainer;
+	addChild(internal->plugContainer);
 
 	internal->cableContainer = new CableContainer;
 	addChild(internal->cableContainer);
@@ -149,8 +165,11 @@ void RackWidget::draw(const DrawArgs& args) {
 	// Tint all draws after this point
 	nvgGlobalTint(args.vg, nvgRGBAf(b, b, b, 1));
 
-	// Draw cables
+	// Draw plugs
 	Widget::drawLayer(args, 2);
+
+	// Draw cables
+	Widget::drawLayer(args, 3);
 
 	// Draw selection rectangle
 	if (internal->selecting) {
@@ -219,6 +238,10 @@ void RackWidget::onDragHover(const DragHoverEvent& e) {
 
 widget::Widget* RackWidget::getModuleContainer() {
 	return internal->moduleContainer;
+}
+
+widget::Widget* RackWidget::getPlugContainer() {
+	return internal->plugContainer;
 }
 
 widget::Widget* RackWidget::getCableContainer() {
@@ -1372,6 +1395,7 @@ void RackWidget::appendSelectionContextMenu(ui::Menu* menu) {
 
 void RackWidget::clearCables() {
 	internal->incompleteCable = NULL;
+	// Since cables manage plugs, all plugs are removed from plugContainer
 	internal->cableContainer->clearChildren();
 }
 

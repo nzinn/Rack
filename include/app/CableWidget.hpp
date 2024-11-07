@@ -10,7 +10,18 @@ namespace rack {
 namespace app {
 
 
-struct PlugWidget;
+struct PlugWidget : widget::Widget {
+	struct Internal;
+	Internal* internal;
+
+	PlugWidget();
+	~PlugWidget();
+	void step() override;
+	PRIVATE void setColor(NVGcolor color);
+	PRIVATE void setAngle(float angle);
+	PRIVATE void setPortWidget(PortWidget* portWidget);
+	PRIVATE void setTop(bool top);
+};
 
 
 struct CableWidget : widget::Widget {
@@ -47,6 +58,8 @@ struct CableWidget : widget::Widget {
 	void draw(const DrawArgs& args) override;
 	void drawLayer(const DrawArgs& args, int layer) override;
 	engine::Cable* releaseCable();
+	void onAdd(const AddEvent& e) override;
+	void onRemove(const RemoveEvent& e) override;
 };
 
 

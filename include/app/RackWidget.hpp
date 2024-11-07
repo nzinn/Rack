@@ -41,6 +41,7 @@ struct RackWidget : widget::OpaqueWidget {
 	// Rack methods
 
 	widget::Widget* getModuleContainer();
+	widget::Widget* getPlugContainer();
 	widget::Widget* getCableContainer();
 	math::Vec getMousePos();
 
