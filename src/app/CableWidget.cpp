@@ -279,15 +279,15 @@ void CableWidget::step() {
 
 	// Draw output plug
 	outputPlug->setPosition(outputPos);
-	// bool outputTop = isComplete() && APP->scene->rack->getTopCable(outputPort) == this;
-	// outputPlug->setTop(outputTop);
+	bool outputTop = outputPort && (APP->scene->rack->getTopPlug(outputPort) == outputPlug);
+	outputPlug->setTop(outputTop);
 	outputPlug->setAngle(slump.minus(outputPos).arg());
 	outputPlug->setColor(colorOpaque);
 
 	// Draw input plug
 	inputPlug->setPosition(inputPos);
-	// bool inputTop = isComplete() && APP->scene->rack->getTopCable(inputPort) == this;
-	// inputPlug->setTop(inputTop);
+	bool inputTop = inputPort && (APP->scene->rack->getTopPlug(inputPort) == inputPlug);
+	inputPlug->setTop(inputTop);
 	inputPlug->setAngle(slump.minus(inputPos).arg());
 	inputPlug->setColor(colorOpaque);
 

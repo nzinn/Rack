@@ -20,6 +20,8 @@ struct PortWidget::Internal {
 	CableWidget* overrideCw = NULL;
 	CableWidget* overrideCloneCw = NULL;
 	bool overrideCreateCable = false;
+	/** When dragging port, this is the grabbed end type of the cable. */
+	engine::Port::Type draggedType = engine::Port::INPUT;
 };
 
 
@@ -346,18 +348,11 @@ void PortWidget::step() {
 void PortWidget::draw(const DrawArgs& args) {
 	PortWidget* draggedPw = dynamic_cast<PortWidget*>(APP->event->getDraggedWidget());
 	if (draggedPw) {
-		// TODO
-	}
-	// TODO Reimplement this
-#if 0
-	CableWidget* cw = APP->scene->rack->getIncompleteCable();
-	if (cw) {
-		// Dim the PortWidget if the active cable cannot plug into this PortWidget
-		if (type == engine::Port::OUTPUT ? cw->outputPort : cw->inputPort) {
+		if (draggedPw->internal->draggedType != type) {
+			// Dim the PortWidget if the active cable cannot plug into this PortWidget
 			nvgTint(args.vg, nvgRGBf(0.33, 0.33, 0.33));
 		}
 	}
-#endif
 	Widget::draw(args);
 }
 
@@ -421,6 +416,7 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 			else
 				cw->outputPort = cloneCw->outputPort;
 			cw->updateCable();
+			internal->draggedType = type;
 		}
 	}
 	else {
@@ -438,6 +434,13 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 			// Reuse existing cable
 			cw->getPort(type) = NULL;
 			cw->updateCable();
+			internal->draggedType = type;
+
+			// Move grabbed plug to top of stack
+			PlugWidget* plug = cw->getPlug(type);
+			assert(plug);
+			APP->scene->rack->getPlugContainer()->removeChild(plug);
+			APP->scene->rack->getPlugContainer()->addChild(plug);
 		}
 	}
 
@@ -451,18 +454,12 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 		// Set port
 		cw->getPort(type) = this;
 		cw->updateCable();
+		internal->draggedType = (type == engine::Port::INPUT) ? engine::Port::OUTPUT : engine::Port::INPUT;
 	}
 
 	// Add cable to rack if not already added
 	if (!cw->getParent()) {
 		APP->scene->rack->addCable(cw);
-	}
-	else {
-		// Move grabbed plug to top of stack
-		PlugWidget* plug = cw->getPlug(type);
-		assert(plug);
-		APP->scene->rack->getPlugContainer()->removeChild(plug);
-		APP->scene->rack->getPlugContainer()->addChild(plug);
 	}
 }
 
