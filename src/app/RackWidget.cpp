@@ -28,7 +28,6 @@ struct RackWidget::Internal {
 	widget::Widget* moduleContainer = NULL;
 	widget::Widget* plugContainer = NULL;
 	widget::Widget* cableContainer = NULL;
-	CableWidget* incompleteCable = NULL;
 	int nextCableColorId = 0;
 	/** The last mouse position in the RackWidget */
 	math::Vec mousePos;
@@ -289,6 +288,13 @@ void RackWidget::mergeJson(json_t* rootJ) {
 		json_object_set_new(moduleJ, "pos", posJ);
 	}
 
+	// Calculate plug orders
+	std::map<Widget*, int> plugOrders;
+	int plugOrder = 1;
+	for (Widget* w : internal->plugContainer->children) {
+		plugOrders[w] = plugOrder++;
+	}
+
 	// cables
 	json_t* cablesJ = json_object_get(rootJ, "cables");
 	if (!cablesJ)
@@ -308,6 +314,20 @@ void RackWidget::mergeJson(json_t* rootJ) {
 		}
 
 		cw->mergeJson(cableJ);
+
+		// inputPlugOrder
+		auto plugOrderIt = plugOrders.find(cw->inputPlug);
+		if (plugOrderIt != plugOrders.end()) {
+			int inputPlugOrder = plugOrderIt->second;
+			json_object_set_new(cableJ, "inputPlugOrder", json_integer(inputPlugOrder));
+		}
+
+		// outputPlugOrder
+		plugOrderIt = plugOrders.find(cw->outputPlug);
+		if (plugOrderIt != plugOrders.end()) {
+			int outputPlugOrder = plugOrderIt->second;
+			json_object_set_new(cableJ, "outputPlugOrder", json_integer(outputPlugOrder));
+		}
 	}
 }
 
@@ -369,6 +389,8 @@ void RackWidget::fromJson(json_t* rootJ) {
 
 	updateExpanders();
 
+	std::map<Widget*, int> plugOrders;
+
 	// cables
 	json_t* cablesJ = json_object_get(rootJ, "cables");
 	// In <=v0.6, cables were called wires
@@ -409,7 +431,24 @@ void RackWidget::fromJson(json_t* rootJ) {
 			continue;
 		}
 		addCable(cw);
+
+		// inputPlugOrder
+		json_t* inputPlugOrderJ = json_object_get(cableJ, "inputPlugOrder");
+		if (inputPlugOrderJ) {
+			plugOrders[cw->inputPlug] = json_integer_value(inputPlugOrderJ);
+		}
+
+		// outputPlugOrder
+		json_t* outputPlugOrderJ = json_object_get(cableJ, "outputPlugOrder");
+		if (outputPlugOrderJ) {
+			plugOrders[cw->outputPlug] = json_integer_value(outputPlugOrderJ);
+		}
 	}
+
+	// Reorder plugs, approximately O(n log(n) log(n))
+	internal->plugContainer->children.sort([&](Widget* w1, Widget* w2) {
+		return get(plugOrders, w1, 0) < get(plugOrders, w2, 0);
+	});
 }
 
 struct PasteJsonResult {
@@ -680,7 +719,6 @@ std::vector<ModuleWidget*> RackWidget::getModules() {
 		assert(mw);
 		mws.push_back(mw);
 	}
-	mws.shrink_to_fit();
 	return mws;
 }
 
@@ -1010,8 +1048,8 @@ json_t* RackWidget::selectionToJson(bool cables) {
 	if (cables) {
 		// cables
 		json_t* cablesJ = json_array();
+		// Only add complete cables to JSON
 		for (CableWidget* cw : getCompleteCables()) {
-			// Only add cables attached on both ends to selected modules
 			engine::Cable* cable = cw->getCable();
 			if (!cable || !cable->inputModule || !cable->outputModule)
 				continue;
@@ -1394,8 +1432,7 @@ void RackWidget::appendSelectionContextMenu(ui::Menu* menu) {
 }
 
 void RackWidget::clearCables() {
-	internal->incompleteCable = NULL;
-	// Since cables manage plugs, all plugs are removed from plugContainer
+	// Since cables manage plugs, all plugs will be removed from plugContainer
 	internal->cableContainer->clearChildren();
 }
 
@@ -1421,61 +1458,46 @@ void RackWidget::clearCablesAction() {
 
 void RackWidget::clearCablesOnPort(PortWidget* port) {
 	for (CableWidget* cw : getCablesOnPort(port)) {
-		// Check if cable is connected to port
-		if (cw == internal->incompleteCable) {
-			internal->incompleteCable = NULL;
-			internal->cableContainer->removeChild(cw);
-		}
-		else {
-			removeCable(cw);
-		}
+		removeCable(cw);
 		delete cw;
 	}
 }
 
 void RackWidget::addCable(CableWidget* cw) {
-	assert(cw->isComplete());
 	internal->cableContainer->addChild(cw);
 }
 
 void RackWidget::removeCable(CableWidget* cw) {
-	assert(cw->isComplete());
 	internal->cableContainer->removeChild(cw);
 }
 
 CableWidget* RackWidget::getIncompleteCable() {
-	return internal->incompleteCable;
-}
-
-void RackWidget::setIncompleteCable(CableWidget* cw) {
-	if (internal->incompleteCable) {
-		internal->cableContainer->removeChild(internal->incompleteCable);
-		delete internal->incompleteCable;
-		internal->incompleteCable = NULL;
-	}
-	if (cw) {
-		internal->cableContainer->addChild(cw);
-		internal->incompleteCable = cw;
-	}
-}
-
-CableWidget* RackWidget::releaseIncompleteCable() {
-	if (!internal->incompleteCable)
-		return NULL;
-
-	CableWidget* cw = internal->incompleteCable;
-	internal->cableContainer->removeChild(internal->incompleteCable);
-	internal->incompleteCable = NULL;
-	return cw;
-}
-
-CableWidget* RackWidget::getTopCable(PortWidget* port) {
 	for (auto it = internal->cableContainer->children.rbegin(); it != internal->cableContainer->children.rend(); it++) {
 		CableWidget* cw = dynamic_cast<CableWidget*>(*it);
 		assert(cw);
-		if (cw->inputPort == port || cw->outputPort == port)
+		if (!cw->isComplete())
 			return cw;
 	}
+	return NULL;
+}
+
+PlugWidget* RackWidget::getTopPlug(PortWidget* port) {
+	assert(port);
+	for (auto it = internal->plugContainer->children.rbegin(); it != internal->plugContainer->children.rend(); it++) {
+		PlugWidget* plug = dynamic_cast<PlugWidget*>(*it);
+		assert(plug);
+		CableWidget* cw = plug->getCable();
+		PortWidget* port2 = cw->getPort(plug->getType());
+		if (port2 == port)
+			return plug;
+	}
+	return NULL;
+}
+
+CableWidget* RackWidget::getTopCable(PortWidget* port) {
+	PlugWidget* plug = getTopPlug(port);
+	if (plug)
+		return plug->getCable();
 	return NULL;
 }
 
@@ -1501,8 +1523,20 @@ CableWidget* RackWidget::getCable(PortWidget* outputPort, PortWidget* inputPort)
 	return NULL;
 }
 
+std::vector<CableWidget*> RackWidget::getCables() {
+	std::vector<CableWidget*> cws;
+	cws.reserve(internal->cableContainer->children.size());
+	for (widget::Widget* w : internal->cableContainer->children) {
+		CableWidget* cw = dynamic_cast<CableWidget*>(w);
+		assert(cw);
+		cws.push_back(cw);
+	}
+	return cws;
+}
+
 std::vector<CableWidget*> RackWidget::getCompleteCables() {
 	std::vector<CableWidget*> cws;
+	// Assume that most cables are complete, so pre-allocate and shrink vector.
 	cws.reserve(internal->cableContainer->children.size());
 	for (widget::Widget* w : internal->cableContainer->children) {
 		CableWidget* cw = dynamic_cast<CableWidget*>(w);
@@ -1514,15 +1548,27 @@ std::vector<CableWidget*> RackWidget::getCompleteCables() {
 	return cws;
 }
 
-std::vector<CableWidget*> RackWidget::getCablesOnPort(PortWidget* port) {
-	assert(port);
+std::vector<CableWidget*> RackWidget::getIncompleteCables() {
 	std::vector<CableWidget*> cws;
 	for (widget::Widget* w : internal->cableContainer->children) {
 		CableWidget* cw = dynamic_cast<CableWidget*>(w);
 		assert(cw);
-		if (cw->inputPort == port || cw->outputPort == port) {
+		if (!cw->isComplete())
 			cws.push_back(cw);
-		}
+	}
+	return cws;
+}
+
+std::vector<CableWidget*> RackWidget::getCablesOnPort(PortWidget* port) {
+	assert(port);
+	std::vector<CableWidget*> cws;
+	for (widget::Widget* w : internal->plugContainer->children) {
+		PlugWidget* plug = dynamic_cast<PlugWidget*>(w);
+		assert(plug);
+		CableWidget* cw = plug->getCable();
+		PortWidget* port2 = cw->getPort(plug->getType());
+		if (port2 == port)
+			cws.push_back(cw);
 	}
 	return cws;
 }
@@ -1530,14 +1576,15 @@ std::vector<CableWidget*> RackWidget::getCablesOnPort(PortWidget* port) {
 std::vector<CableWidget*> RackWidget::getCompleteCablesOnPort(PortWidget* port) {
 	assert(port);
 	std::vector<CableWidget*> cws;
-	for (widget::Widget* w : internal->cableContainer->children) {
-		CableWidget* cw = dynamic_cast<CableWidget*>(w);
-		assert(cw);
+	for (widget::Widget* w : internal->plugContainer->children) {
+		PlugWidget* plug = dynamic_cast<PlugWidget*>(w);
+		assert(plug);
+		CableWidget* cw = plug->getCable();
 		if (!cw->isComplete())
 			continue;
-		if (cw->inputPort == port || cw->outputPort == port) {
+		PortWidget* port2 = cw->getPort(plug->getType());
+		if (port2 == port)
 			cws.push_back(cw);
-		}
 	}
 	return cws;
 }

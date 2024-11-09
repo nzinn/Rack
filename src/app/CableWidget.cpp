@@ -34,17 +34,17 @@ struct PlugLight : componentlibrary::TRedGreenBlueLight<app::MultiLightWidget> {
 
 
 struct PlugWidget::Internal {
+	CableWidget* cableWidget;
+	engine::Port::Type type;
+
 	/** Initially pointing upward. */
 	float angle = 0.5f * M_PI;
-	PortWidget* portWidget = NULL;
 
 	widget::FramebufferWidget* fb;
 	widget::TransformWidget* plugTransform;
 	TintWidget* plugTint;
 	widget::SvgWidget* plug;
-
 	widget::SvgWidget* plugPort;
-
 	app::MultiLightWidget* plugLight;
 };
 
@@ -87,8 +87,10 @@ PlugWidget::~PlugWidget() {
 
 void PlugWidget::step() {
 	std::vector<float> values(3);
-	if (internal->portWidget && internal->plugLight->isVisible()) {
-		engine::Port* port = internal->portWidget->getPort();
+
+	PortWidget* pw = internal->cableWidget->getPort(internal->type);
+	if (pw && internal->plugLight->isVisible()) {
+		engine::Port* port = pw->getPort();
 		if (port) {
 			for (int i = 0; i < 3; i++) {
 				values[i] = port->plugLights[i].getBrightness();
@@ -116,12 +118,16 @@ void PlugWidget::setAngle(float angle) {
 	internal->fb->setDirty();
 }
 
-void PlugWidget::setPortWidget(PortWidget* portWidget) {
-	internal->portWidget = portWidget;
-}
-
 void PlugWidget::setTop(bool top) {
 	internal->plugLight->setVisible(top);
+}
+
+CableWidget* PlugWidget::getCable() {
+	return internal->cableWidget;
+}
+
+engine::Port::Type PlugWidget::getType() {
+	return internal->type;
 }
 
 
@@ -134,7 +140,12 @@ CableWidget::CableWidget() {
 	color = color::BLACK_TRANSPARENT;
 
 	outputPlug = new PlugWidget;
+	outputPlug->internal->cableWidget = this;
+	outputPlug->internal->type = engine::Port::OUTPUT;
+
 	inputPlug = new PlugWidget;
+	inputPlug->internal->cableWidget = this;
+	inputPlug->internal->type = engine::Port::INPUT;
 }
 
 
@@ -267,20 +278,18 @@ void CableWidget::step() {
 	colorOpaque.a = 1.f;
 
 	// Draw output plug
-	bool outputTop = !isComplete() || APP->scene->rack->getTopCable(outputPort) == this;
 	outputPlug->setPosition(outputPos);
-	outputPlug->setTop(outputTop);
+	// bool outputTop = isComplete() && APP->scene->rack->getTopCable(outputPort) == this;
+	// outputPlug->setTop(outputTop);
 	outputPlug->setAngle(slump.minus(outputPos).arg());
 	outputPlug->setColor(colorOpaque);
-	outputPlug->setPortWidget(outputPort);
 
 	// Draw input plug
-	bool inputTop = !isComplete() || APP->scene->rack->getTopCable(inputPort) == this;
 	inputPlug->setPosition(inputPos);
-	inputPlug->setTop(inputTop);
+	// bool inputTop = isComplete() && APP->scene->rack->getTopCable(inputPort) == this;
+	// inputPlug->setTop(inputTop);
 	inputPlug->setAngle(slump.minus(inputPos).arg());
 	inputPlug->setColor(colorOpaque);
-	inputPlug->setPortWidget(inputPort);
 
 	Widget::step();
 }
@@ -329,8 +338,9 @@ void CableWidget::drawLayer(const DrawArgs& args, int layer) {
 
 	// The endpoints are off-center
 	math::Vec slump = getSlumpPos(outputPos, inputPos);
-	outputPos = outputPos.plus(slump.minus(outputPos).normalize().mult(13.0));
-	inputPos = inputPos.plus(slump.minus(inputPos).normalize().mult(13.0));
+	float dist = 14.f;
+	outputPos = outputPos.plus(slump.minus(outputPos).normalize().mult(dist));
+	inputPos = inputPos.plus(slump.minus(inputPos).normalize().mult(dist));
 
 	nvgLineCap(args.vg, NVG_ROUND);
 	// Avoids glitches when cable is bent

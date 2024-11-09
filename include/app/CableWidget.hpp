@@ -10,6 +10,9 @@ namespace rack {
 namespace app {
 
 
+struct CableWidget;
+
+
 struct PlugWidget : widget::Widget {
 	struct Internal;
 	Internal* internal;
@@ -19,8 +22,9 @@ struct PlugWidget : widget::Widget {
 	void step() override;
 	PRIVATE void setColor(NVGcolor color);
 	PRIVATE void setAngle(float angle);
-	PRIVATE void setPortWidget(PortWidget* portWidget);
 	PRIVATE void setTop(bool top);
+	CableWidget* getCable();
+	engine::Port::Type getType();
 };
 
 
@@ -41,6 +45,7 @@ struct CableWidget : widget::Widget {
 
 	CableWidget();
 	~CableWidget();
+	/** Returns whether cable is connected to 2 ports. */
 	bool isComplete();
 	/** Based on the input/output ports, re-creates the cable and removes/adds it to the Engine. */
 	void updateCable();
@@ -50,6 +55,15 @@ struct CableWidget : widget::Widget {
 	*/
 	void setCable(engine::Cable* cable);
 	engine::Cable* getCable();
+	PlugWidget*& getPlug(engine::Port::Type type) {
+		return type == engine::Port::INPUT ? inputPlug : outputPlug;
+	}
+	PortWidget*& getPort(engine::Port::Type type) {
+		return type == engine::Port::INPUT ? inputPort : outputPort;
+	}
+	PortWidget*& getHoveredPort(engine::Port::Type type) {
+		return type == engine::Port::INPUT ? hoveredInputPort : hoveredOutputPort;
+	}
 	math::Vec getInputPos();
 	math::Vec getOutputPos();
 	void mergeJson(json_t* rootJ);

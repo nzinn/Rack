@@ -48,7 +48,7 @@ struct PortTooltip : ui::Tooltip {
 					text += string::f("%d: ", i + 1);
 				text += string::f("% .3fV", math::normalizeZero(v));
 			}
-			// Connected to
+			// From/To
 			std::vector<CableWidget*> cables = APP->scene->rack->getCompleteCablesOnPort(portWidget);
 			for (auto it = cables.rbegin(); it != cables.rend(); it++) {
 				CableWidget* cable = *it;
@@ -135,6 +135,8 @@ struct PortCableItem : ui::ColorDotMenuItem {
 
 	ui::Menu* createChildMenu() override {
 		ui::Menu* menu = new ui::Menu;
+
+		// menu->addChild(createMenuLabel(string::f("ID: %ld", cw->cable->id)));
 
 		for (NVGcolor color : settings::cableColors) {
 			// Include extra leading spaces for the color circle
@@ -342,6 +344,12 @@ void PortWidget::step() {
 
 
 void PortWidget::draw(const DrawArgs& args) {
+	PortWidget* draggedPw = dynamic_cast<PortWidget*>(APP->event->getDraggedWidget());
+	if (draggedPw) {
+		// TODO
+	}
+	// TODO Reimplement this
+#if 0
 	CableWidget* cw = APP->scene->rack->getIncompleteCable();
 	if (cw) {
 		// Dim the PortWidget if the active cable cannot plug into this PortWidget
@@ -349,6 +357,7 @@ void PortWidget::draw(const DrawArgs& args) {
 			nvgTint(args.vg, nvgRGBf(0.33, 0.33, 0.33));
 		}
 	}
+#endif
 	Widget::draw(args);
 }
 
@@ -426,32 +435,35 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 			h->setCable(cw);
 			APP->history->push(h);
 
-			// Disconnect and reuse existing cable
-			APP->scene->rack->removeCable(cw);
-			if (type == engine::Port::OUTPUT)
-				cw->outputPort = NULL;
-			else
-				cw->inputPort = NULL;
+			// Reuse existing cable
+			cw->getPort(type) = NULL;
 			cw->updateCable();
 		}
 	}
 
+	// If not using existing cable, create new cable
 	if (!cw) {
-		// Create a new cable
 		cw = new CableWidget;
 
 		// Set color
 		cw->color = APP->scene->rack->getNextCableColor();
 
 		// Set port
-		if (type == engine::Port::OUTPUT)
-			cw->outputPort = this;
-		else
-			cw->inputPort = this;
+		cw->getPort(type) = this;
 		cw->updateCable();
 	}
 
-	APP->scene->rack->setIncompleteCable(cw);
+	// Add cable to rack if not already added
+	if (!cw->getParent()) {
+		APP->scene->rack->addCable(cw);
+	}
+	else {
+		// Move grabbed plug to top of stack
+		PlugWidget* plug = cw->getPlug(type);
+		assert(plug);
+		APP->scene->rack->getPlugContainer()->removeChild(plug);
+		APP->scene->rack->getPlugContainer()->addChild(plug);
+	}
 }
 
 
@@ -459,20 +471,31 @@ void PortWidget::onDragEnd(const DragEndEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	CableWidget* cw = APP->scene->rack->releaseIncompleteCable();
-	if (!cw)
+	std::vector<CableWidget*> cws = APP->scene->rack->getIncompleteCables();
+	if (cws.empty())
 		return;
 
-	if (cw->isComplete()) {
-		APP->scene->rack->addCable(cw);
+	history::ComplexAction* h = new history::ComplexAction;
 
-		// history::CableAdd
-		history::CableAdd* h = new history::CableAdd;
-		h->setCable(cw);
-		APP->history->push(h);
+	for (CableWidget* cw : cws) {
+		if (cw->isComplete()) {
+			// history::CableAdd
+			history::CableAdd* hAdd = new history::CableAdd;
+			hAdd->setCable(cw);
+			h->push(hAdd);
+		}
+		else {
+			APP->scene->rack->removeCable(cw);
+			delete cw;
+		}
+	}
+
+	// Push history
+	if (h->isEmpty()) {
+		delete h;
 	}
 	else {
-		delete cw;
+		APP->history->push(h);
 	}
 }
 
@@ -481,18 +504,28 @@ void PortWidget::onDragDrop(const DragDropEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	// HACK: Only delete tooltip if we're not (normal) dragging it.
-	if (e.origin == this)
-		createTooltip();
+	PortWidget* pwOrigin = dynamic_cast<PortWidget*>(e.origin);
+	if (!pwOrigin)
+		return;
 
-	CableWidget* cw = APP->scene->rack->getIncompleteCable();
-	if (cw) {
-		cw->hoveredOutputPort = cw->hoveredInputPort = NULL;
-		if (type == engine::Port::OUTPUT && cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
-			cw->outputPort = this;
+	// HACK: Only delete tooltip if we're not (normal) dragging it.
+	if (pwOrigin == this) {
+		createTooltip();
+	}
+
+	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
+		cw->hoveredOutputPort = NULL;
+		cw->hoveredInputPort = NULL;
+		if (type == engine::Port::OUTPUT) {
+			// Check that similar cable doesn't exist
+			if (cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
+				cw->outputPort = this;
+			}
 		}
-		if (type == engine::Port::INPUT && cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
-			cw->inputPort = this;
+		else {
+			if (cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
+				cw->inputPort = this;
+			}
 		}
 		cw->updateCable();
 	}
@@ -503,18 +536,25 @@ void PortWidget::onDragEnter(const DragEnterEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	PortWidget* pw = dynamic_cast<PortWidget*>(e.origin);
-	if (pw) {
-		createTooltip();
-	}
+	// Check if dragging from another port, which implies that a cable is being dragged
+	PortWidget* pwOrigin = dynamic_cast<PortWidget*>(e.origin);
+	if (!pwOrigin)
+		return;
 
-	CableWidget* cw = APP->scene->rack->getIncompleteCable();
-	if (cw) {
-		if (type == engine::Port::OUTPUT && cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
-			cw->hoveredOutputPort = this;
+	createTooltip();
+
+	// Make all incomplete cables hover this port
+	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
+		if (type == engine::Port::OUTPUT) {
+			// Check that similar cable doesn't exist
+			if (cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
+				cw->hoveredOutputPort = this;
+			}
 		}
-		if (type == engine::Port::INPUT && cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
-			cw->hoveredInputPort = this;
+		else {
+			if (cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
+				cw->hoveredInputPort = this;
+			}
 		}
 	}
 }
@@ -526,16 +566,12 @@ void PortWidget::onDragLeave(const DragLeaveEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	PortWidget* originPort = dynamic_cast<PortWidget*>(e.origin);
-	if (!originPort)
+	PortWidget* pwOrigin = dynamic_cast<PortWidget*>(e.origin);
+	if (!pwOrigin)
 		return;
 
-	CableWidget* cw = APP->scene->rack->getIncompleteCable();
-	if (cw) {
-		if (type == engine::Port::OUTPUT)
-			cw->hoveredOutputPort = NULL;
-		if (type == engine::Port::INPUT)
-			cw->hoveredInputPort = NULL;
+	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
+		cw->getHoveredPort(type) = NULL;
 	}
 }
 
