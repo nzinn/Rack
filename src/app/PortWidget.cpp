@@ -476,10 +476,6 @@ void PortWidget::onDragEnd(const DragEndEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	// Should never happen since it's created in onDragStart().
-	if (!internal->history)
-		return;
-
 	// Remove all incomplete cables
 	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
 		APP->scene->rack->removeCable(cw);
@@ -487,7 +483,10 @@ void PortWidget::onDragEnd(const DragEndEvent& e) {
 	}
 
 	// Push history
-	if (internal->history->isEmpty()) {
+	if (!internal->history) {
+		// This shouldn't happen since it's created in onDragStart()
+	}
+	else if (internal->history->isEmpty()) {
 		// No history actions, don't push anything
 		delete internal->history;
 	}
@@ -541,11 +540,28 @@ void PortWidget::onDragDrop(const DragDropEvent& e) {
 		}
 		cw->updateCable();
 
-		history::CableAdd* h = new history::CableAdd;
-		h->setCable(cw);
-		pwOrigin->internal->history->push(h);
+		// This should always be true since the ComplexAction is created in onDragStart()
+		history::ComplexAction* history = pwOrigin->internal->history;
+		if (history) {
+			// Reject history if plugging into same port
+			auto& actions = history->actions;
+			auto it = std::find_if(actions.begin(), actions.end(), [&](history::Action* h) {
+				history::CableAdd* hca = dynamic_cast<history::CableAdd*>(h);
+				if (!hca)
+					return false;
+				return hca->isCable(cw);
+			});
 
-		// TODO Reject history if plugging into same port
+			if (it != actions.end()) {
+				actions.erase(it);
+			}
+			else {
+				// Push CableAdd action
+				history::CableAdd* h = new history::CableAdd;
+				h->setCable(cw);
+				history->push(h);
+			}
+		}
 	}
 }
 

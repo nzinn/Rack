@@ -142,6 +142,7 @@ struct CableAdd : Action {
 	int outputId;
 	NVGcolor color;
 	void setCable(app::CableWidget* cw);
+	bool isCable(app::CableWidget* cw) const;
 	void undo() override;
 	void redo() override;
 	CableAdd() {

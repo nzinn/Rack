@@ -160,6 +160,13 @@ void CableAdd::setCable(app::CableWidget* cw) {
 	color = cw->color;
 }
 
+bool CableAdd::isCable(app::CableWidget* cw) const {
+	if (!(cw && cw->cable && cw->cable->id >= 0 && cw->cable->outputModule && cw->cable->inputModule))
+		return false;
+	engine::Cable* c = cw->cable;
+	return c->inputModule->id == inputModuleId && c->inputId == inputId && c->outputModule->id == outputModuleId && c->outputId == outputId;
+}
+
 void CableAdd::undo() {
 	app::CableWidget* cw = APP->scene->rack->getCable(cableId);
 	if (!cw)
