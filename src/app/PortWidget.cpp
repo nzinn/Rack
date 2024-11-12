@@ -22,6 +22,8 @@ struct PortWidget::Internal {
 	bool overrideCreateCable = false;
 	/** When dragging port, this is the grabbed end type of the cable. */
 	engine::Port::Type draggedType = engine::Port::INPUT;
+	/** Created when dragging starts, deleted when it ends. */
+	history::ComplexAction* history = NULL;
 };
 
 
@@ -396,6 +398,14 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 		internal->overrideCreateCable = false;
 	});
 
+	// Create ComplexAction
+	if (internal->history) {
+		delete internal->history;
+		internal->history = NULL;
+	}
+	internal->history = new history::ComplexAction;
+	internal->history->name = "move cable";
+
 	CableWidget* cw = NULL;
 	int mods = APP->window->getMods();
 	if (internal->overrideCreateCable || (mods & RACK_MOD_MASK) == RACK_MOD_CTRL) {
@@ -415,7 +425,6 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 				cw->inputPort = cloneCw->inputPort;
 			else
 				cw->outputPort = cloneCw->outputPort;
-			cw->updateCable();
 			internal->draggedType = type;
 		}
 	}
@@ -429,7 +438,7 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 			// history::CableRemove
 			history::CableRemove* h = new history::CableRemove;
 			h->setCable(cw);
-			APP->history->push(h);
+			internal->history->push(h);
 
 			// Reuse existing cable
 			cw->getPort(type) = NULL;
@@ -453,7 +462,6 @@ void PortWidget::onDragStart(const DragStartEvent& e) {
 
 		// Set port
 		cw->getPort(type) = this;
-		cw->updateCable();
 		internal->draggedType = (type == engine::Port::INPUT) ? engine::Port::OUTPUT : engine::Port::INPUT;
 	}
 
@@ -468,32 +476,32 @@ void PortWidget::onDragEnd(const DragEndEvent& e) {
 	if (e.button != GLFW_MOUSE_BUTTON_LEFT)
 		return;
 
-	std::vector<CableWidget*> cws = APP->scene->rack->getIncompleteCables();
-	if (cws.empty())
+	// Should never happen since it's created in onDragStart().
+	if (!internal->history)
 		return;
 
-	history::ComplexAction* h = new history::ComplexAction;
-
-	for (CableWidget* cw : cws) {
-		if (cw->isComplete()) {
-			// history::CableAdd
-			history::CableAdd* hAdd = new history::CableAdd;
-			hAdd->setCable(cw);
-			h->push(hAdd);
-		}
-		else {
-			APP->scene->rack->removeCable(cw);
-			delete cw;
-		}
+	// Remove all incomplete cables
+	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
+		APP->scene->rack->removeCable(cw);
+		delete cw;
 	}
 
 	// Push history
-	if (h->isEmpty()) {
-		delete h;
+	if (internal->history->isEmpty()) {
+		// No history actions, don't push anything
+		delete internal->history;
+	}
+	else if (internal->history->actions.size() == 1) {
+		// Push single history action
+		APP->history->push(internal->history->actions[0]);
+		internal->history->actions.clear();
+		delete internal->history;
 	}
 	else {
-		APP->history->push(h);
+		// Push ComplexAction
+		APP->history->push(internal->history);
 	}
+	internal->history = NULL;
 }
 
 
@@ -511,6 +519,7 @@ void PortWidget::onDragDrop(const DragDropEvent& e) {
 	}
 
 	for (CableWidget* cw : APP->scene->rack->getIncompleteCables()) {
+		// These should already be NULL because onDragLeave() is called immediately before onDragDrop().
 		cw->hoveredOutputPort = NULL;
 		cw->hoveredInputPort = NULL;
 		if (type == engine::Port::OUTPUT) {
@@ -518,13 +527,25 @@ void PortWidget::onDragDrop(const DragDropEvent& e) {
 			if (cw->inputPort && !APP->scene->rack->getCable(this, cw->inputPort)) {
 				cw->outputPort = this;
 			}
+			else {
+				continue;
+			}
 		}
 		else {
 			if (cw->outputPort && !APP->scene->rack->getCable(cw->outputPort, this)) {
 				cw->inputPort = this;
 			}
+			else {
+				continue;
+			}
 		}
 		cw->updateCable();
+
+		history::CableAdd* h = new history::CableAdd;
+		h->setCable(cw);
+		pwOrigin->internal->history->push(h);
+
+		// TODO Reject history if plugging into same port
 	}
 }
 
