@@ -132,6 +132,8 @@ engine::Port::Type PlugWidget::getType() {
 
 
 struct CableWidget::Internal {
+	/** For making history consistent when disconnecting and reconnecting cable. */
+	int64_t cableId = -1;
 };
 
 
@@ -171,11 +173,13 @@ void CableWidget::updateCable() {
 	}
 	if (inputPort && outputPort) {
 		cable = new engine::Cable;
+		cable->id = internal->cableId;
 		cable->inputModule = inputPort->module;
 		cable->inputId = inputPort->portId;
 		cable->outputModule = outputPort->module;
 		cable->outputId = outputPort->portId;
 		APP->engine->addCable(cable);
+		internal->cableId = cable->id;
 	}
 }
 
@@ -185,6 +189,7 @@ void CableWidget::setCable(engine::Cable* cable) {
 		APP->engine->removeCable(this->cable);
 		delete this->cable;
 		this->cable = NULL;
+		internal->cableId = -1;
 	}
 	if (cable) {
 		app::ModuleWidget* outputMw = APP->scene->rack->getModule(cable->outputModule->id);
@@ -202,6 +207,7 @@ void CableWidget::setCable(engine::Cable* cable) {
 			throw Exception("Cable cannot find input port %d", cable->inputId);
 
 		this->cable = cable;
+		internal->cableId = cable->id;
 	}
 	else {
 		outputPort = NULL;
@@ -380,6 +386,7 @@ void CableWidget::drawLayer(const DrawArgs& args, int layer) {
 engine::Cable* CableWidget::releaseCable() {
 	engine::Cable* cable = this->cable;
 	this->cable = NULL;
+	internal->cableId = -1;
 	return cable;
 }
 
