@@ -246,18 +246,22 @@ void svgDraw(NVGcontext* vg, NSVGimage* svg) {
 			assert(g->nstops >= 1);
 			NVGcolor icol = getNVGColor(g->stops[0].color);
 			NVGcolor ocol = getNVGColor(g->stops[g->nstops - 1].color);
+			float iOffset = g->stops[0].offset;
+			float oOffset = g->stops[g->nstops - 1].offset;
 
 			float t[6];
 			nvgTransformInverse(t, g->xform);
 			DEBUG_ONLY(printf("			inverse: %f %f %f %f %f %f\n", t[0], t[1], t[2], t[3], t[4], t[5]);)
 			nvgTransform(vg, t[0], t[1], t[2], t[3], t[4], t[5]);
+			// Because nvgLinearGradient() and nvgRadialGradient() arbitrarily limit a minimum of 1.0 feather, rescale and use (0, 100) coordinates.
+			nvgScale(vg, 1/100.0, 1/100.0);
 
 			NVGpaint paint;
 			if (shape->fill.type == NSVG_PAINT_LINEAR_GRADIENT) {
-				paint = nvgLinearGradient(vg, 0.0, 0.0, 0.0, 1.0, icol, ocol);
+				paint = nvgLinearGradient(vg, 0.0, 100 * iOffset, 0.0, 100 * oOffset, icol, ocol);
 			}
 			else if (shape->fill.type == NSVG_PAINT_RADIAL_GRADIENT) {
-				paint = nvgRadialGradient(vg, 0.0, 0.0, 0.0, 1.0, icol, ocol);
+				paint = nvgRadialGradient(vg, 0.0, 0.0, 100 * iOffset, 100 * oOffset, icol, ocol);
 			}
 			nvgFillPaint(vg, paint);
 			nvgFill(vg);
