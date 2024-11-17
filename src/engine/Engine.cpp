@@ -158,50 +158,23 @@ struct EngineWorker {
 		}
 		running = true;
 
-		// Launch high-priority thread if possible
+		// Launch thread with same scheduling policy and priority as current thread (ID 0)
 		int err;
-		pthread_attr_t attr;
-		pthread_attr_init(&attr);
-
-		int policy = SCHED_OTHER;
-#if defined ARCH_LIN || defined ARCH_WIN
-		// SCHED_FIFO and SCHED_RR require root or cap_sys_nice on Linux.
-		// WinPthreads doesn't use this policy setting.
-#endif
-		pthread_attr_setschedpolicy(&attr, policy);
-
-		int minPriority = sched_get_priority_min(policy);
-		int maxPriority = sched_get_priority_max(policy);
-		int priority = 0;
-#if defined ARCH_LIN
-		// Only 0 priority allowed for SCHED_OTHER on Linux.
-#elif defined ARCH_WIN
-		// Should be 15, same priority as RTAUDIO_SCHEDULE_REALTIME on WASAPI.
-		// Maps to THREAD_PRIORITY_TIME_CRITICAL on Windows.
-		priority = maxPriority;
-#endif
-		priority = std::min(std::max(priority, minPriority), maxPriority);
-		sched_param param;
-		param.sched_priority = priority;
-		pthread_attr_setschedparam(&attr, &param);
-
-		DEBUG("EngineWorker %d thread launching with policy %d priority %d (min %d, max %d)", id, policy, param.sched_priority, minPriority, maxPriority);
-		err = pthread_create(&thread, &attr, [](void* p) -> void* {
+		err = pthread_create(&thread, NULL, [](void* p) -> void* {
 			EngineWorker* that = (EngineWorker*) p;
 
-			int policy;
-			sched_param param;
-			pthread_getschedparam(pthread_self(), &policy, &param);
-			DEBUG("EngineWorker %d thread launched with policy %d priority %d", that->id, policy, param.sched_priority);
+			// int policy;
+			// sched_param param;
+			// if (!pthread_getschedparam(pthread_self(), &policy, &param)) {
+			// 	DEBUG("EngineWorker %d thread launched with policy %d priority %d", that->id, policy, param.sched_priority);
+			// }
 
 			that->run();
 			return NULL;
 		}, this);
 		if (err) {
-			WARN("Could not launch worker thread %d: %s", id, strerror(err));
+			WARN("EngineWorker %d thread could not be started: %s", id, strerror(err));
 		}
-
-		pthread_attr_destroy(&attr);
 	}
 
 	void requestStop() {
