@@ -374,8 +374,9 @@ void PortWidget::step() {
 
 
 void PortWidget::draw(const DrawArgs& args) {
+	// Check if left-dragging a PortWidget
 	PortWidget* draggedPw = dynamic_cast<PortWidget*>(APP->event->getDraggedWidget());
-	if (draggedPw) {
+	if (draggedPw && APP->event->dragButton == GLFW_MOUSE_BUTTON_LEFT) {
 		if (draggedPw->internal->draggedType != type) {
 			// Dim the PortWidget if the active cable cannot plug into this PortWidget
 			nvgTint(args.vg, nvgRGBf(0.33, 0.33, 0.33));
