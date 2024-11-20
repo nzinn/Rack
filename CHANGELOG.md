@@ -2,7 +2,7 @@
 
 In this document, Ctrl means Cmd on Mac.
 
-### 2.6.0 (in development)
+### 2.6.0 (2024-11-20)
 - Add ability to grab all plugs stacked on a port with the "All cables" menu item.
 - When dropping a plug on a port, always stack it on top of other plugs.
 - Add "View > Zoom to fit modules" to menu bar with key command F4.
@@ -11,6 +11,9 @@ In this document, Ctrl means Cmd on Mac.
 - Add parameter value functions `vtobpm()` and `bpmtov()`.
 - On non-QWERTY keyboards, use QWERTY key positions for key commands instead of letters.
 - Render 2-stop linear/radial gradients with any stop offsets and transformations in SVG.
+- Rack Pro
+	- Fix VST3 plugin forcing DAW MIDI input to channel 1.
+	- Allow VST3 plugin to receive MIDI CC, pitch bend, and channel aftertouch.
 - Core
 	- MIDI to CV: When sustain pedal is released in monophonic mode, turn off gate if no notes are held.
 - API
