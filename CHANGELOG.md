@@ -2,6 +2,22 @@
 
 In this document, Ctrl means Cmd on Mac.
 
+### 2.6.0 (in development)
+- Add ability to grab all plugs stacked on a port with the "All cables" menu item.
+- When dropping a plug on a port, always stack it on top of other plugs.
+- Add "View > Zoom to fit modules" to menu bar with key command F4.
+- Add "Zoom to fit" to module context menu with key command Ctrl+F4.
+- Add "View > Mouse wheel" setting to make mouse wheel zoom instead of scroll.
+- Add parameter value functions `vtobpm()` and `bpmtov()`.
+- On non-QWERTY keyboards, use QWERTY key positions for key commands instead of letters.
+- Render 2-stop linear/radial gradients with any stop offsets and transformations in SVG.
+- Core
+	- MIDI to CV: When sustain pedal is released in monophonic mode, turn off gate if no notes are held.
+- API
+	- Don't combine SDK packages for Mac-x64 and Mac-arm64.
+	- Update libcurl to 8.10.0 and OpenSSL to 3.3.2.
+	- Add `dsp::MidiParser` class.
+
 ### 2.5.2 (2024-05-09)
 - Add configurable cable color labels.
 - When duplicating module with cables, duplicate cables connected to module's outputs as well as inputs.
