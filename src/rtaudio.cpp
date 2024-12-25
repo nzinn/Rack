@@ -58,7 +58,7 @@ struct RtAudioDevice : audio::Device {
 		try {
 			// Query device ID
 			deviceInfo = rtAudio->getDeviceInfo(deviceId);
-			if (!deviceInfo.probed) {
+			if (!deviceInfo.ID) {
 				throw Exception("Failed to query RtAudio %s device %d", RTAUDIO_API_NAMES.at(api).c_str(), deviceId);
 			}
 
